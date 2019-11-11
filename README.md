@@ -35,7 +35,7 @@ public class GenerateAppSecretCommand
 }
 ```
 
-The gateway secret can be found on the back of your Trådfri hub.
+*Note*: The gateway secret can be found on the back of your Trådfri hub.
 
 The output is :
 
