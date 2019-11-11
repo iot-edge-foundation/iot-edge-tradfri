@@ -1,6 +1,7 @@
 namespace TradfriModule
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Runtime.InteropServices;
     using System.Runtime.Loader;
@@ -13,6 +14,7 @@ namespace TradfriModule
     using Microsoft.Azure.Devices.Shared;
     using Newtonsoft.Json;
     using Tomidix.NetStandard.Tradfri;
+    using Tomidix.NetStandard.Tradfri.Controllers;
 
     class Program
     {
@@ -82,30 +84,91 @@ namespace TradfriModule
             Console.WriteLine($"Module '{_moduleId}' initialized");
             Console.WriteLine($".Net framework version '{Environment.GetEnvironmentVariable("DOTNET_VERSION")}' in use");
 
-            // assign direct method handler again
+            // assign direct method handler 
             await ioTHubModuleClient.SetMethodHandlerAsync(
                 "generateAppSecret",
                 GenerateAppSecretMethodCallBack,
                 ioTHubModuleClient);
 
             Console.WriteLine("Attached method handler: generateAppSecret");            
+
+            // assign direct method handler 
+            await ioTHubModuleClient.SetMethodHandlerAsync(
+                "collectInformation",
+                collectInformationMethodCallBack,
+                ioTHubModuleClient);
+
+            Console.WriteLine("Attached method handler: collectInformatio");            
         }
 
         static async Task<MethodResponse> GenerateAppSecretMethodCallBack(MethodRequest methodRequest, object userContext)        
         {
-            CloseController();
-
             Console.WriteLine("Executing GenerateAppSecretMethodCallBack");
-            
+
             var messageBytes = methodRequest.Data;
             var messageJson = Encoding.UTF8.GetString(messageBytes);
             var command = (GenerateAppSecretCommand)JsonConvert.DeserializeObject(messageJson, typeof(GenerateAppSecretCommand));
             
+            ConstructController();
+
             var tradfriAuth = _controller.GenerateAppSecret(command.gatewaySecret, _moduleId);
+
+            Console.WriteLine($"Secret generated of '{tradfriAuth?.PSK?.Length}' characters long.");
 
             var secretResponse = new GenerateAppSecretResponse{appSecret = tradfriAuth.PSK};
 
             var json = JsonConvert.SerializeObject(secretResponse);
+            var response = new MethodResponse(Encoding.UTF8.GetBytes(json), 200);
+
+            await Task.Delay(TimeSpan.FromSeconds(0));
+
+            return response;
+        }
+        
+        static async Task<MethodResponse> collectInformationMethodCallBack(MethodRequest methodRequest, object userContext)        
+        {
+            Console.WriteLine("Executing collectInformationMethodCallBack");
+
+            var messageBytes = methodRequest.Data;
+            var messageJson = Encoding.UTF8.GetString(messageBytes);
+            var command = (CollectInformationCommand)JsonConvert.DeserializeObject(messageJson, typeof(CollectInformationCommand));
+
+            var infoResponse = new CollectInformationResponse{ responseState = 0 };
+
+            if (_controller == null)
+            {
+                infoResponse.responseState = -1;
+            }
+
+            GatewayController gatewayController = _controller.GatewayController;
+
+            if ( gatewayController == null)
+            {
+                infoResponse.responseState = -2;
+            }
+
+            var groups = await gatewayController.GetGroupObjects();
+
+            if ( groups == null)
+            {
+                infoResponse.responseState = -2;
+            }
+
+            foreach (var group in groups)
+            {
+                var deviceGroup = new Group{id =group.ID, name = group.Name, lightState = group.LightState, activeMood = group.ActiveMood };
+
+                Console.WriteLine($"{group.ID} - {group.Name} - {group.ActiveMood}");
+
+                foreach (var id in group.Devices.The15002.ID)
+                {
+                    deviceGroup.devices.Add(new Device{id = id});
+                }
+
+                infoResponse.groups.Add(deviceGroup);
+            }
+
+            var json = JsonConvert.SerializeObject(infoResponse);
             var response = new MethodResponse(Encoding.UTF8.GetBytes(json), 200);
 
             await Task.Delay(TimeSpan.FromSeconds(0));
@@ -225,7 +288,7 @@ namespace TradfriModule
         {
             if (_controller == null)
             {
-                Console.WriteLine($"Controller is disconnected");
+                Console.WriteLine($"Controller is already disconnected");
                 
                 return;
             }
@@ -233,6 +296,26 @@ namespace TradfriModule
             Console.WriteLine($"Connecting to {_controller.GateWayName}");
             _controller = null;
         }
+
+        private static void ConstructController()
+        {
+            CloseController();
+
+            if (!string.IsNullOrEmpty(GatewayName)
+                    && !string.IsNullOrEmpty(IpAddress))
+            {
+                Console.WriteLine($"Construct {_controller.GateWayName}");
+
+                var controller = new TradfriController(GatewayName, IpAddress);
+                
+                Console.WriteLine($"Constructed {_controller.GateWayName}");
+            }
+            else
+            {
+                Console.WriteLine($"Constructing controller skipped due to incomplete parameters");
+            }
+        }
+
 
         private static void AttachController()
         {
@@ -297,5 +380,44 @@ namespace TradfriModule
     public class GenerateAppSecretResponse
     {
         public string appSecret {get; set;}
+    }
+
+    public class CollectInformationCommand
+    {
+
+    }
+
+    public class CollectInformationResponse
+    {
+        public CollectInformationResponse()
+        {
+            groups = new List<Group>();
+        }      
+
+        public int responseState { get; set; }
+
+        public List<Group> groups {get; private set;}
+    }
+
+    public class Group
+    {
+        public long id { get; set; }
+
+        public string name { get; set; }
+        public long lightState { get; set; }
+
+        public long activeMood {get; set;}
+
+        public List<Device> devices {get; private set;}
+
+        public Group()
+        {
+            devices = new List<Device>();
+        }
+    }
+
+    public class Device
+    {
+        public long id { get; set; }
     }
 }
