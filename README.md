@@ -4,9 +4,11 @@ Azure IoT Edge support for IKEA Trådfri/Tradfri. The logic is limited to lights
 
 # Usage
 
-## 1. Intialization
+## 1. Initialization
 
 ## 2. Controlling lights
+
+# Interface
 
 # Aknowledgement
 
