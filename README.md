@@ -14,11 +14,9 @@ Azure IoT Edge support for IKEA Trådfri/Tradfri. The logic is limited to lights
 
 The following properties are used:
 
-* gatewayName
-* ipAddress
-* appSecret 
-
-*Note:* appSecret should be set using the appropriate Direct Method
+* gatewayName (required; choose a name)
+* ipAddress (required; the IP address of the Trådfri hub)
+* appSecret (required; generate this with appropriate Direct Method)
 
 ## Direct Methods
 
@@ -37,6 +35,8 @@ public class GenerateAppSecretCommand
 }
 ```
 
+The gateway secret can be found on the back of your Trådfri hub.
+
 The output is :
 
 ```
@@ -45,6 +45,8 @@ public class GenerateAppSecretResponse
   public string appSecret {get; set;}
 }
 ```
+
+Fill in this appSecret in the related Desired Property.
 
 # Aknowledgement
 
