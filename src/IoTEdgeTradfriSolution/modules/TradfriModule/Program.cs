@@ -15,6 +15,7 @@ namespace TradfriModule
     using Newtonsoft.Json;
     using Tomidix.NetStandard.Tradfri;
     using Tomidix.NetStandard.Tradfri.Controllers;
+    using System.Linq;
 
     class Program
     {
@@ -55,6 +56,23 @@ namespace TradfriModule
         /// </summary>
         static async Task Init()
         {
+            _moduleId = Environment.GetEnvironmentVariable("IOTEDGE_MODULEID");
+
+            Console.WriteLine("      _                         ___      _____   ___     _");
+            Console.WriteLine("     /_\\   ___ _  _  _ _  ___  |_ _| ___|_   _| | __| __| | __ _  ___  ");
+            Console.WriteLine("    / _ \\ |_ /| || || '_|/ -_)  | | / _ \\ | |   | _| / _` |/ _` |/ -_)");
+            Console.WriteLine("   /_/ \\_\\/__| \\_,_||_|  \\___| |___|\\___/ |_|   |___|\\__,_|\\__, |\\___|");
+            Console.WriteLine("                                                           |___/");
+            Console.WriteLine("    _____            _  __     _  ");
+            Console.WriteLine("   |_   _| _ () _ __| |/ _|_ _(_) ");
+            Console.WriteLine("     | || '_/ _` / _` |  _| '_| | ");
+            Console.WriteLine("     |_||_| \\__,_\\__,_|_| |_| |_| ");
+            Console.WriteLine(" ");
+            Console.WriteLine("   Copyright © 2019 - IoT Edge Foundation");
+            Console.WriteLine(" ");
+
+            Console.WriteLine($".Net framework version '{Environment.GetEnvironmentVariable("DOTNET_VERSION")}' in use");
+
             MqttTransportSettings mqttSetting = new MqttTransportSettings(TransportType.Mqtt_Tcp_Only);
             ITransportSettings[] settings = { mqttSetting };
 
@@ -70,19 +88,7 @@ namespace TradfriModule
 
             await ioTHubModuleClient.OpenAsync();
 
-            Console.WriteLine("      _                         ___      _____   ___     _");
-            Console.WriteLine("     /_\\   ___ _  _  _ _  ___  |_ _| ___|_   _| | __| __| | __ _  ___  ");
-            Console.WriteLine("    / _ \\ |_ /| || || '_|/ -_)  | | / _ \\ | |   | _| / _` |/ _` |/ -_)");
-            Console.WriteLine("   /_/ \\_\\/__| \\_,_||_|  \\___| |___|\\___/ |_|   |___|\\__,_|\\__, |\\___|");
-            Console.WriteLine("                                                           |___/");
-            Console.WriteLine(" ");
-            Console.WriteLine("   Copyright © 2019 - IoT Edge Foundation");
-            Console.WriteLine(" ");
-
-            _moduleId = Environment.GetEnvironmentVariable("IOTEDGE_MODULEID");
-
             Console.WriteLine($"Module '{_moduleId}' initialized");
-            Console.WriteLine($".Net framework version '{Environment.GetEnvironmentVariable("DOTNET_VERSION")}' in use");
 
             // assign direct method handler 
             await ioTHubModuleClient.SetMethodHandlerAsync(
@@ -98,7 +104,48 @@ namespace TradfriModule
                 collectInformationMethodCallBack,
                 ioTHubModuleClient);
 
-            Console.WriteLine("Attached method handler: collectInformatio");            
+            Console.WriteLine("Attached method handler: collectInformation");            
+
+                        // assign direct method handler 
+            await ioTHubModuleClient.SetMethodHandlerAsync(
+                "reboot",
+                RebootMethodCallBack,
+                ioTHubModuleClient);
+
+            Console.WriteLine("Attached method handler: reboot");            
+        }
+
+       static async Task<MethodResponse> RebootMethodCallBack(MethodRequest methodRequest, object userContext)        
+        {
+            Console.WriteLine("Executing RebootMethodCallBack");
+
+
+            var rebootResponse = new RebootResponse{responseState = 0};
+
+            if (_controller == null)
+            {
+                rebootResponse.responseState = -1;
+            }
+            else
+            {
+                var gatewayController = _controller.GatewayController;
+
+                if ( gatewayController == null)
+                {
+                    rebootResponse.responseState = -2;
+                }
+                else
+                {
+                    await gatewayController.Reboot();
+                }                
+            }
+
+            var json = JsonConvert.SerializeObject(rebootResponse);
+            var response = new MethodResponse(Encoding.UTF8.GetBytes(json), 200);
+
+            await Task.Delay(TimeSpan.FromSeconds(0));
+
+            return response;
         }
 
         static async Task<MethodResponse> GenerateAppSecretMethodCallBack(MethodRequest methodRequest, object userContext)        
@@ -139,33 +186,64 @@ namespace TradfriModule
             {
                 infoResponse.responseState = -1;
             }
-
-            GatewayController gatewayController = _controller.GatewayController;
-
-            if ( gatewayController == null)
+            else
             {
-                infoResponse.responseState = -2;
-            }
+                var gatewayController = _controller.GatewayController;
 
-            var groups = await gatewayController.GetGroupObjects();
-
-            if ( groups == null)
-            {
-                infoResponse.responseState = -2;
-            }
-
-            foreach (var group in groups)
-            {
-                var deviceGroup = new Group{id =group.ID, name = group.Name, lightState = group.LightState, activeMood = group.ActiveMood };
-
-                Console.WriteLine($"{group.ID} - {group.Name} - {group.ActiveMood}");
-
-                foreach (var id in group.Devices.The15002.ID)
+                if ( gatewayController == null)
                 {
-                    deviceGroup.devices.Add(new Device{id = id});
+                    infoResponse.responseState = -2;
                 }
+                else
+                {
+                    var groups = await gatewayController.GetGroupObjects();
 
-                infoResponse.groups.Add(deviceGroup);
+                    if ( groups == null)
+                    {
+                        infoResponse.responseState = -3;
+                    }
+                    else
+                    {
+                        var deviceObjects = await gatewayController.GetDeviceObjects();
+
+                        if ( deviceObjects == null)
+                        {
+                            infoResponse.responseState = -4;
+                        }
+                        else
+                        {
+                            foreach (var group in groups)
+                            {
+                                var deviceGroup = new Group{id =group.ID, name = group.Name, lightState = group.LightState, activeMood = group.ActiveMood };
+
+                                Console.WriteLine($"{group.ID} - {group.Name} - {group.ActiveMood}");
+
+                                foreach (var id in group.Devices.The15002.ID)
+                                {
+                                    var device = new Device{id = id};
+
+                                    var deviceObject = deviceObjects.FirstOrDefault(x => x.ID == id);
+
+                                    if (deviceObject == null)
+                                    {
+                                        infoResponse.responseState = -5;
+                                    }
+                                    else
+                                    {
+                                        device.deviceType = deviceObject.DeviceType.ToString();
+                                        device.name = deviceObject.Name;
+                                        device.battery = deviceObject.Info.Battery;
+                                        device.deviceTypeExt = deviceObject.Info.DeviceType.ToString();
+                                    }
+
+                                    deviceGroup.devices.Add(device);
+                                }
+
+                                infoResponse.groups.Add(deviceGroup);
+                            }
+                        }
+                    }
+                }
             }
 
             var json = JsonConvert.SerializeObject(infoResponse);
@@ -213,7 +291,7 @@ namespace TradfriModule
                         GatewayName = DefaultGatewayName;
                     }
 
-                    Console.WriteLine($"GatewayName changed to {GatewayName}");
+                    Console.WriteLine($"GatewayName changed to '{GatewayName}'");
 
                     reportedProperties["gatewayName"] = GatewayName;
                 } 
@@ -233,7 +311,7 @@ namespace TradfriModule
                         AppSecret = DefaultAppSecret;
                     }
 
-                    Console.WriteLine($"AppSecret changed to {AppSecret}");
+                    Console.WriteLine($"AppSecret changed to '{AppSecret}'");
 
                     reportedProperties["appSecret"] = AppSecret;
                 }
@@ -253,7 +331,7 @@ namespace TradfriModule
                         IpAddress = DefaultIpAddress;
                     }
 
-                    Console.WriteLine($"IpAddress changed to {IpAddress}");
+                    Console.WriteLine($"IpAddress changed to '{IpAddress}'");
 
                     reportedProperties["ipAddress"] = IpAddress;
                 }
@@ -275,12 +353,12 @@ namespace TradfriModule
                 
                 foreach (Exception exception in ex.InnerExceptions)
                 {
-                    Console.WriteLine($"Error when receiving desired property: {exception}");
+                    Console.WriteLine($"Error when receiving desired properties: {exception}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error when receiving desired property: {ex.Message}");
+                Console.WriteLine($"Error when receiving desired properties: {ex.Message}");
             }
         }
 
@@ -293,7 +371,7 @@ namespace TradfriModule
                 return;
             }
 
-            Console.WriteLine($"Connecting to {_controller.GateWayName}");
+            Console.WriteLine($"Closing '{_controller.GateWayName}'");
             _controller = null;
         }
 
@@ -304,11 +382,11 @@ namespace TradfriModule
             if (!string.IsNullOrEmpty(GatewayName)
                     && !string.IsNullOrEmpty(IpAddress))
             {
-                Console.WriteLine($"Construct {_controller.GateWayName}");
+                Console.WriteLine($"Construct '{GatewayName}'");
 
-                var controller = new TradfriController(GatewayName, IpAddress);
+                _controller = new TradfriController(GatewayName, IpAddress);
                 
-                Console.WriteLine($"Constructed {_controller.GateWayName}");
+                Console.WriteLine($"Constructed '{GatewayName}'");
             }
             else
             {
@@ -316,25 +394,37 @@ namespace TradfriModule
             }
         }
 
-
         private static void AttachController()
         {
-            CloseController();
-
-            if (!string.IsNullOrEmpty(AppSecret)
-                    && !string.IsNullOrEmpty(GatewayName)
-                    && !string.IsNullOrEmpty(IpAddress))
+            try
             {
-                Console.WriteLine($"Connecting to {_controller.GateWayName}");
+                CloseController();
 
-                var controller = new TradfriController(GatewayName, IpAddress);
-                _controller.ConnectAppKey(AppSecret, _moduleId);
+                if (!string.IsNullOrEmpty(AppSecret)
+                        && !string.IsNullOrEmpty(GatewayName)
+                        && !string.IsNullOrEmpty(_moduleId)
+                        && !string.IsNullOrEmpty(IpAddress))
+                {
+                    Console.WriteLine($"Connecting to '{GatewayName}'");
 
-                Console.WriteLine($"Connected to {_controller.GateWayName}");
+                    _controller = new TradfriController(GatewayName, IpAddress);
+
+                    Console.WriteLine($"Controller created");
+
+                    _controller.ConnectAppKey(AppSecret, _moduleId);
+
+                    Console.WriteLine($"Connected to '{GatewayName}'");
+                }
+                else
+                {
+                    Console.WriteLine($"Connecting controller skipped due to incomplete parameters");
+                }
             }
-            else
+            catch(Exception ex)
             {
-                Console.WriteLine($"Connecting controller skipped due to incomplete parameters");
+                Console.WriteLine($"Connecting {GatewayName}/{_moduleId} failed due to '{ex.Message}'");
+
+                throw;
             }
         }
 
@@ -387,14 +477,17 @@ namespace TradfriModule
 
     }
 
-    public class CollectInformationResponse
+   public class CollectInformationResponse : CollectedInformation
     {
-        public CollectInformationResponse()
+        public int responseState { get; set; }
+    }
+
+    public class CollectedInformation
+    {
+        public CollectedInformation()
         {
             groups = new List<Group>();
         }      
-
-        public int responseState { get; set; }
 
         public List<Group> groups {get; private set;}
     }
@@ -419,5 +512,18 @@ namespace TradfriModule
     public class Device
     {
         public long id { get; set; }
+
+        public string deviceType { get; set; }
+
+        public string deviceTypeExt { get; set; }
+
+        public string name { get; set; }
+
+        public long battery { get; set; }
+    }
+
+    public class RebootResponse
+    {
+        public int responseState { get; set; }
     }
 }
