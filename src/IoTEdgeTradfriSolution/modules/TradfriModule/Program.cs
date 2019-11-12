@@ -214,7 +214,13 @@ namespace TradfriModule
                         {
                             foreach (var group in groups)
                             {
-                                var deviceGroup = new Group{id =group.ID, name = group.Name, lightState = group.LightState, activeMood = group.ActiveMood };
+                                var deviceGroup = new Group
+                                                    {
+                                                        id =group.ID, 
+                                                        name = group.Name, 
+                                                        lightState = group.LightState, 
+                                                        activeMood = group.ActiveMood
+                                                    };
 
                                 Console.WriteLine($"{group.ID} - {group.Name} - {group.ActiveMood}");
 
@@ -234,6 +240,8 @@ namespace TradfriModule
                                         device.name = deviceObject.Name;
                                         device.battery = deviceObject.Info.Battery;
                                         device.deviceTypeExt = deviceObject.Info.DeviceType.ToString();
+                                        device.lastSeen = deviceObject.LastSeen;
+                                        device.reachableState = deviceObject.ReachableState.ToString();
                                     }
 
                                     deviceGroup.devices.Add(device);
@@ -405,7 +413,7 @@ namespace TradfriModule
                         && !string.IsNullOrEmpty(_moduleId)
                         && !string.IsNullOrEmpty(IpAddress))
                 {
-                    Console.WriteLine($"Connecting to '{GatewayName}'");
+                    Console.WriteLine($"Connecting to '{GatewayName}'   ");
 
                     _controller = new TradfriController(GatewayName, IpAddress);
 
@@ -520,6 +528,10 @@ namespace TradfriModule
         public string name { get; set; }
 
         public long battery { get; set; }
+
+        public DateTime lastSeen { get; set; }
+
+        public string reachableState { get; set; }
     }
 
     public class RebootResponse
