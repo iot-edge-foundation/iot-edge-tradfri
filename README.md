@@ -48,6 +48,75 @@ public class GenerateAppSecretResponse
 
 Fill in this appSecret in the related Desired Property.
 
+## collectInformation
+
+The input is:
+
+```
+public class CollectInformationCommand
+{
+}
+```
+
+The output is:
+
+```
+public class CollectInformationResponse : CollectedInformation
+{
+  public int responseState { get; set; }
+}
+
+public class CollectedInformation
+{
+  public CollectedInformation()
+  {
+    groups = new List<Group>();
+  }      
+
+  public List<Group> groups {get; private set;}
+}
+
+public class Group
+{
+  public long id { get; set; }
+
+  public string name { get; set; }
+  public long lightState { get; set; }
+
+  public long activeMood {get; set;}
+
+  public List<Device> devices {get; private set;}
+
+  public Group()
+  {
+    devices = new List<Device>();
+  }
+}
+
+public class Device
+{
+  public long id { get; set; }
+
+  public string deviceType { get; set; }
+
+  public string deviceTypeExt { get; set; }
+
+  public string name { get; set; }
+
+  public long battery { get; set; }
+
+  public DateTime lastSeen { get; set; }
+
+  public string reachableState { get; set; }
+
+  public long dimmer { get; set; }
+
+  public string state { get; set; }
+
+  public string colorHex { get; set; }
+}
+```
+
 # Aknowledgement
 
 The logic in this module is based on https://github.com/tomidix/CSharpTradFriLibrary
