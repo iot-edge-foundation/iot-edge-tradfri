@@ -119,7 +119,6 @@ namespace TradfriModule
         {
             Console.WriteLine("Executing RebootMethodCallBack");
 
-
             var rebootResponse = new RebootResponse{responseState = 0};
 
             if (_controller == null)
@@ -142,8 +141,6 @@ namespace TradfriModule
 
             var json = JsonConvert.SerializeObject(rebootResponse);
             var response = new MethodResponse(Encoding.UTF8.GetBytes(json), 200);
-
-            await Task.Delay(TimeSpan.FromSeconds(0));
 
             return response;
         }
@@ -175,10 +172,6 @@ namespace TradfriModule
         static async Task<MethodResponse> collectInformationMethodCallBack(MethodRequest methodRequest, object userContext)        
         {
             Console.WriteLine("Executing collectInformationMethodCallBack");
-
-            var messageBytes = methodRequest.Data;
-            var messageJson = Encoding.UTF8.GetString(messageBytes);
-            var command = (CollectInformationCommand)JsonConvert.DeserializeObject(messageJson, typeof(CollectInformationCommand));
 
             var infoResponse = new CollectInformationResponse{ responseState = 0 };
 
@@ -242,6 +235,27 @@ namespace TradfriModule
                                         device.deviceTypeExt = deviceObject.Info.DeviceType.ToString();
                                         device.lastSeen = deviceObject.LastSeen;
                                         device.reachableState = deviceObject.ReachableState.ToString();
+
+                                        var dimmer = deviceObject.LightControl != null 
+                                                        && deviceObject.LightControl.Count> 0 
+                                                            ? deviceObject.LightControl[0].Dimmer 
+                                                            : -1;
+
+                                        device.dimmer = dimmer;
+
+                                        var state = deviceObject.LightControl != null 
+                                                        && deviceObject.LightControl.Count> 0 
+                                                            ? deviceObject.LightControl[0].State.ToString() 
+                                                            : string.Empty;
+
+                                        device.state = state;
+
+                                        var colorHex = deviceObject.LightControl != null 
+                                                        && deviceObject.LightControl.Count> 0 
+                                                            ? deviceObject.LightControl[0].ColorHex 
+                                                            : string.Empty;
+
+                                        device.state = colorHex;
                                     }
 
                                     deviceGroup.devices.Add(device);
@@ -480,11 +494,6 @@ namespace TradfriModule
         public string appSecret {get; set;}
     }
 
-    public class CollectInformationCommand
-    {
-
-    }
-
    public class CollectInformationResponse : CollectedInformation
     {
         public int responseState { get; set; }
@@ -532,6 +541,12 @@ namespace TradfriModule
         public DateTime lastSeen { get; set; }
 
         public string reachableState { get; set; }
+
+        public long dimmer { get; set; }
+
+        public string state { get; set; }
+
+        public string colorHex { get; set; }
     }
 
     public class RebootResponse
