@@ -50,12 +50,10 @@ Fill in this appSecret in the related Desired Property.
 
 ## collectInformation
 
-The input is:
+The input is empty:
 
 ```
-public class CollectInformationCommand
-{
-}
+{}
 ```
 
 The output is:
@@ -116,6 +114,25 @@ public class Device
   public string colorHex { get; set; }
 }
 ```
+
+## reboot
+
+The input is empty:
+
+```
+{}
+```
+
+The output is:
+
+```
+public class RebootResponse
+{
+  public int responseState { get; set; }
+}
+```
+
+*Note*: It's unclear if this method is actully doing anything... 
 
 # Aknowledgement
 
