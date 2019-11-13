@@ -24,7 +24,22 @@ At this moment, the module supports:
 
 ## 1. Initialization
 
+Fill in the desired properties:
+
+* gatewayName (required; choose a name)
+* ipAddress (required; the IP address of the Trådfri hub)
+
+Then call the "generateAppSecret" direct method. Pass the "gateway secret", found on the back of your Trådfri hub.
+
+*Note*: the name of the module will be used as application name.
+
+The returned "application secret" has to be filled in in the desired property. 
+
+* appSecret
+
 ## 2. Controlling lights
+
+[TBD]
 
 # Interface
 
