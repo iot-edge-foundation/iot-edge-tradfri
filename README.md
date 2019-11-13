@@ -8,11 +8,17 @@ This logic is available as [Docker container](https://hub.docker.com/repository/
 
 This Docker module is optimized for [Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/).
 
-![Azure IoT Edge Serial Module Architecture](media/flow.png)
+![How to use in routing flow](media/flow.png)
 
 # Current limitations
 
+At this moment, the module supports:
 
+* Generating a private key for the module
+* Overview of all rooms and it's device
+* Reboot (untested)
+
+![Logging shown at start of module](media/logging.png)
 
 # Usage
 
