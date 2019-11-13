@@ -62,7 +62,7 @@ The following Direct Methods are offered:
 The input is:
 
 ```
-public class GenerateAppSecretCommand
+public class GenerateAppSecretRequest
 {
   public string gatewaySecret {get; set;}
 }
