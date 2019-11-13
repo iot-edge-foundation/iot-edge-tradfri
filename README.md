@@ -18,7 +18,7 @@ docker pull svelde/iot-edge-tradfri:0.1.0-amd64
 
 ![How to use in routing flow](media/flow.png)
 
-# Current limitations
+# Supported features 
 
 At this moment, the module supports:
 
