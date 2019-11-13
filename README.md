@@ -83,13 +83,13 @@ Fill in this appSecret in the related Desired Property.
 
 ## collectInformation
 
-The input is empty:
+The input format is empty:
 
 ```
 {}
 ```
 
-The output is:
+The output format is:
 
 ```
 public class CollectInformationResponse : CollectedInformation
@@ -146,6 +146,51 @@ public class Device
 
   public string colorHex { get; set; }
 }
+```
+
+### Example
+
+This is an example of the response:
+
+```
+{
+	"status": 200,
+	"payload": {
+		"responseState": 0,
+		"groups": [{
+				"id": 131090,
+				"name": "Room 1",
+				"lightState": 0,
+				"activeMood": 196659,
+				"devices": [{
+						"id": 65593,
+						"deviceType": "Remote",
+						"deviceTypeExt": "TRADFRI remote control",
+						"name": "TRADFRI remote control 1",
+						"battery": 34,
+						"lastSeen": "2019-11-12T21:33:32Z",
+						"reachableState": "1",
+						"dimmer": -1,
+						"state": "",
+						"colorHex": null
+					}, {
+						"id": 65594,
+						"deviceType": "Light",
+						"deviceTypeExt": "TRADFRI bulb GU10 WS 400lm",
+						"name": "TRADFRI bulb 42",
+						"battery": 0,
+						"lastSeen": "2019-11-12T19:58:08Z",
+						"reachableState": "0",
+						"dimmer": 220,
+						"state": "f1e0b5",
+						"colorHex": null
+					}
+				]
+			}
+		]
+	}
+}
+
 ```
 
 ## reboot
