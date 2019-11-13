@@ -120,11 +120,8 @@ namespace TradfriModule
                 SetLightMethodCallBack,
                 ioTHubModuleClient);
 
-            Console.WriteLine("Attached method handler: reboot");    
-
+            Console.WriteLine("Attached method handler: setLight");    
         }
-
-                        
 
        static async Task<MethodResponse> SetLightMethodCallBack(MethodRequest methodRequest, object userContext)        
         {
@@ -142,70 +139,60 @@ namespace TradfriModule
             }
             else
             {
-                var gatewayController = _controller.GatewayController;
+                var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
 
-                if ( gatewayController == null)
+                var device = deviceObjects.FirstOrDefault(x => x.DeviceType == DeviceType.Light
+                                                        && x.ID == request.id);
+
+                if (device == null)
                 {
-                    setLightResponse.responseState = -2;
+                    setLightResponse.responseState = -3;
                 }
                 else
                 {
-                    var deviceObjects = await gatewayController.GetDeviceObjects();
+                    // Color
 
-                    var device = deviceObjects.FirstOrDefault(x => x.DeviceType == DeviceType.Light
-                                                            && x.ID == request.id);
+                    var color = GetPredefinedColor(request.color);
 
-                    if (device == null)
+                    if (!string.IsNullOrEmpty(color))
                     {
-                        setLightResponse.responseState = -3;
+                        await _controller.DeviceController.SetColor(device, color);
+
+                        Console.WriteLine($"Light '{request.id}' color set to '{color}'");
                     }
                     else
                     {
-                        // On/Off
-
-                        if (request.turnLightOn.HasValue)
-                        {
-                            await _controller.DeviceController.SetLight(device, request.turnLightOn.Value);
-
-                            Console.WriteLine($"Light '{request.id}' set to '{request.turnLightOn.Value}'");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Ignored turnLightOn for '{request.id}'");
-                        }
-
-                        // Color
-
-                        var color = GetPredefinedColor(request.color);
-
-                        if (!string.IsNullOrEmpty(color))
-                        {
-                            await _controller.DeviceController.SetColor(device, color);
-
-                            Console.WriteLine($"Light '{request.id}' color set to '{color}'");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Ignored color for '{request.id}'");
-                        }
-
-                        // Brightness
-
-                        if (request.brightness.HasValue 
-                                && request.brightness.Value >= 0
-                                && request.brightness.Value <= 10)
-                        {
-                            await _controller.DeviceController.SetDimmer(device, request.brightness.Value * 10 * 254 / 100);
-
-                            Console.WriteLine($"Light '{request.id}' brightness set to '{request.brightness.Value}'");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Ignored brightness for '{request.id}'");
-                        }
-
+                        Console.WriteLine($"Ignored color for '{request.id}'");
                     }
-                }                
+
+                    // Brightness
+
+                    if (request.brightness.HasValue 
+                            && request.brightness.Value >= 0
+                            && request.brightness.Value <= 10)
+                    {
+                        await _controller.DeviceController.SetDimmer(device, request.brightness.Value * 10 * 254 / 100);
+
+                        Console.WriteLine($"Light '{request.id}' brightness set to '{request.brightness.Value}'");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Ignored brightness for '{request.id}'");
+                    }
+
+                    // On/Off
+
+                    if (request.turnLightOn.HasValue)
+                    {
+                        await _controller.DeviceController.SetLight(device, request.turnLightOn.Value);
+
+                        Console.WriteLine($"Light '{request.id}' set to '{request.turnLightOn.Value}'");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Ignored turnLightOn for '{request.id}'");
+                    }
+                }               
             }
             
             var json = JsonConvert.SerializeObject(setLightResponse);
@@ -240,16 +227,7 @@ namespace TradfriModule
             }
             else
             {
-                var gatewayController = _controller.GatewayController;
-
-                if ( gatewayController == null)
-                {
-                    rebootResponse.responseState = -2;
-                }
-                else
-                {
-                    await gatewayController.Reboot();
-                }                
+                await _controller.GatewayController.Reboot();
             }
 
             var json = JsonConvert.SerializeObject(rebootResponse);
@@ -294,88 +272,79 @@ namespace TradfriModule
             }
             else
             {
-                var gatewayController = _controller.GatewayController;
+                var groups = await _controller.GatewayController.GetGroupObjects();
 
-                if ( gatewayController == null)
+                if ( groups == null)
                 {
-                    infoResponse.responseState = -2;
+                    infoResponse.responseState = -3;
                 }
                 else
                 {
-                    var groups = await gatewayController.GetGroupObjects();
+                    var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
 
-                    if ( groups == null)
+                    if ( deviceObjects == null)
                     {
-                        infoResponse.responseState = -3;
+                        infoResponse.responseState = -4;
                     }
                     else
                     {
-                        var deviceObjects = await gatewayController.GetDeviceObjects();
+                        foreach (var group in groups)
+                        {
+                            var deviceGroup = new Group
+                                                {
+                                                    id =group.ID, 
+                                                    name = group.Name, 
+                                                    lightState = group.LightState, 
+                                                    activeMood = group.ActiveMood
+                                                };
 
-                        if ( deviceObjects == null)
-                        {
-                            infoResponse.responseState = -4;
-                        }
-                        else
-                        {
-                            foreach (var group in groups)
+                            Console.WriteLine($"{group.ID} - {group.Name} - {group.ActiveMood}");
+
+                            foreach (var id in group.Devices.The15002.ID)
                             {
-                                var deviceGroup = new Group
-                                                    {
-                                                        id =group.ID, 
-                                                        name = group.Name, 
-                                                        lightState = group.LightState, 
-                                                        activeMood = group.ActiveMood
-                                                    };
+                                var device = new Device{id = id};
 
-                                Console.WriteLine($"{group.ID} - {group.Name} - {group.ActiveMood}");
+                                var deviceObject = deviceObjects.FirstOrDefault(x => x.ID == id);
 
-                                foreach (var id in group.Devices.The15002.ID)
+                                if (deviceObject == null)
                                 {
-                                    var device = new Device{id = id};
+                                    infoResponse.responseState = -5;
+                                }
+                                else
+                                {
+                                    device.deviceType = deviceObject.DeviceType.ToString();
+                                    device.name = deviceObject.Name;
+                                    device.battery = deviceObject.Info.Battery;
+                                    device.deviceTypeExt = deviceObject.Info.DeviceType.ToString();
+                                    device.lastSeen = deviceObject.LastSeen;
+                                    device.reachableState = deviceObject.ReachableState.ToString();
 
-                                    var deviceObject = deviceObjects.FirstOrDefault(x => x.ID == id);
+                                    var dimmer = deviceObject.LightControl != null 
+                                                    && deviceObject.LightControl.Count> 0 
+                                                        ? deviceObject.LightControl[0].Dimmer 
+                                                        : -1;
 
-                                    if (deviceObject == null)
-                                    {
-                                        infoResponse.responseState = -5;
-                                    }
-                                    else
-                                    {
-                                        device.deviceType = deviceObject.DeviceType.ToString();
-                                        device.name = deviceObject.Name;
-                                        device.battery = deviceObject.Info.Battery;
-                                        device.deviceTypeExt = deviceObject.Info.DeviceType.ToString();
-                                        device.lastSeen = deviceObject.LastSeen;
-                                        device.reachableState = deviceObject.ReachableState.ToString();
+                                    device.dimmer = dimmer;
 
-                                        var dimmer = deviceObject.LightControl != null 
-                                                        && deviceObject.LightControl.Count> 0 
-                                                            ? deviceObject.LightControl[0].Dimmer 
-                                                            : -1;
+                                    var state = deviceObject.LightControl != null 
+                                                    && deviceObject.LightControl.Count> 0 
+                                                        ? deviceObject.LightControl[0].State.ToString() 
+                                                        : string.Empty;
 
-                                        device.dimmer = dimmer;
+                                    device.state = state;
 
-                                        var state = deviceObject.LightControl != null 
-                                                        && deviceObject.LightControl.Count> 0 
-                                                            ? deviceObject.LightControl[0].State.ToString() 
-                                                            : string.Empty;
+                                    var colorHex = deviceObject.LightControl != null 
+                                                    && deviceObject.LightControl.Count> 0 
+                                                        ? deviceObject.LightControl[0].ColorHex 
+                                                        : string.Empty;
 
-                                        device.state = state;
-
-                                        var colorHex = deviceObject.LightControl != null 
-                                                        && deviceObject.LightControl.Count> 0 
-                                                            ? deviceObject.LightControl[0].ColorHex 
-                                                            : string.Empty;
-
-                                        device.state = colorHex;
-                                    }
-
-                                    deviceGroup.devices.Add(device);
+                                    device.state = colorHex;
                                 }
 
-                                infoResponse.groups.Add(deviceGroup);
+                                deviceGroup.devices.Add(device);
                             }
+
+                            infoResponse.groups.Add(deviceGroup);
                         }
                     }
                 }
@@ -522,6 +491,8 @@ namespace TradfriModule
                 _controller = new TradfriController(GatewayName, IpAddress);
                 
                 Console.WriteLine($"Constructed '{GatewayName}'");
+
+                Console.WriteLine($"Gateway controller attached");
             }
             else
             {
