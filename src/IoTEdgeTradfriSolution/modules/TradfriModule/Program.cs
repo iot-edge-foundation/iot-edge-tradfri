@@ -1,11 +1,7 @@
 namespace TradfriModule
 {
     using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Runtime.InteropServices;
     using System.Runtime.Loader;
-    using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -14,10 +10,8 @@ namespace TradfriModule
     using Microsoft.Azure.Devices.Shared;
     using Newtonsoft.Json;
     using Tomidix.NetStandard.Tradfri;
-    using Tomidix.NetStandard.Tradfri.Controllers;
     using Tomidix.NetStandard.Tradfri.Models;
     using System.Linq;
-    using System.Reflection;
 
     class Program
     {
@@ -121,78 +115,192 @@ namespace TradfriModule
                 ioTHubModuleClient);
 
             Console.WriteLine("Attached method handler: setLight");    
+
+            await ioTHubModuleClient.SetMethodHandlerAsync(
+                "setGroup",
+                SetGroupMethodCallBack,
+                ioTHubModuleClient);
+
+            Console.WriteLine("Attached method handler: setGroup");  
+
+            await ioTHubModuleClient.SetMethodHandlerAsync(
+                "reconnect",
+                ReconnectMethodCallBack,
+                ioTHubModuleClient);
+
+            Console.WriteLine("Attached method handler: reconnect");  
         }
 
-       static async Task<MethodResponse> SetLightMethodCallBack(MethodRequest methodRequest, object userContext)        
+        static async Task<MethodResponse> ReconnectMethodCallBack(MethodRequest methodRequest, object userContext)        
+        {
+            Console.WriteLine("Executing ReconnectMethodCallBack");
+
+            var reconnectResponse = new ReconnectResponse{responseState = 0};
+
+            try
+            {
+              Console.WriteLine("Reconnecting...");
+              AttachController();
+              await Task.Delay(TimeSpan.FromSeconds(0));
+              Console.WriteLine("Reconnected");
+            }
+            catch (Exception ex)
+            {
+               reconnectResponse.errorMessage = ex.Message;   
+            }
+            
+            var json = JsonConvert.SerializeObject(reconnectResponse);
+            var response = new MethodResponse(Encoding.UTF8.GetBytes(json), 200);
+
+            return response;
+        }                
+
+        static async Task<MethodResponse> SetGroupMethodCallBack(MethodRequest methodRequest, object userContext)        
+        {
+            Console.WriteLine("Executing SetGroupMethodCallBack");
+
+            var setGroupResponse = new SetGroupResponse{responseState = 0};
+
+            try
+            {
+                var messageBytes = methodRequest.Data;
+                var messageJson = Encoding.UTF8.GetString(messageBytes);
+                var request = JsonConvert.DeserializeObject<SetGroupRequest>(messageJson);
+
+                if (_controller == null)
+                {
+                    setGroupResponse.responseState = -1;
+                }
+                else
+                {
+                    var group = await _controller.GroupController.GetTradfriGroup(request.id);
+
+                    if (group == null)
+                    {
+                        setGroupResponse.responseState = -2;
+                    }
+                    else
+                    {
+                        // TODO Mood
+
+                        // Brightness
+
+                        if (request.brightness.HasValue 
+                                && request.brightness.Value >= 0
+                                && request.brightness.Value <= 10)
+                        {
+                            await _controller.GroupController.SetDimmer(group, request.brightness.Value * 10 * 254 / 100);
+
+                            Console.WriteLine($"Group '{request.id}' brightness set to '{request.brightness.Value}'");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Ignored brightness for '{request.id}'");
+                        }
+
+                        // On/Off
+
+                        if (request.turnLightOn.HasValue)
+                        {
+                            await _controller.GroupController.SetLight(group, request.turnLightOn.Value);
+
+                            Console.WriteLine($"Group '{request.id}' set to '{request.turnLightOn.Value}'");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Ignored turnLightOn for '{request.id}'");
+                        }
+                    }               
+                }
+            }
+            catch (Exception ex)
+            {
+               setGroupResponse.errorMessage = ex.Message;   
+            }
+            
+            var json = JsonConvert.SerializeObject(setGroupResponse);
+            var response = new MethodResponse(Encoding.UTF8.GetBytes(json), 200);
+
+            return response;
+        }
+
+        static async Task<MethodResponse> SetLightMethodCallBack(MethodRequest methodRequest, object userContext)        
         {
             Console.WriteLine("Executing SetLightMethodCallBack");
 
             var setLightResponse = new SetLightResponse{responseState = 0};
 
-            var messageBytes = methodRequest.Data;
-            var messageJson = Encoding.UTF8.GetString(messageBytes);
-            var request = JsonConvert.DeserializeObject<SetLightRequest>(messageJson);
-
-            if (_controller == null)
+            try
             {
-                setLightResponse.responseState = -1;
-            }
-            else
-            {
-                var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
+                var messageBytes = methodRequest.Data;
+                var messageJson = Encoding.UTF8.GetString(messageBytes);
+                var request = JsonConvert.DeserializeObject<SetLightRequest>(messageJson);
 
-                var device = deviceObjects.FirstOrDefault(x => x.DeviceType == DeviceType.Light
-                                                        && x.ID == request.id);
-
-                if (device == null)
+                if (_controller == null)
                 {
-                    setLightResponse.responseState = -3;
+                    setLightResponse.responseState = -1;
                 }
                 else
                 {
-                    // Color
+                    var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
 
-                    var color = GetPredefinedColor(request.color);
+                    var device = deviceObjects.FirstOrDefault(x => x.DeviceType == DeviceType.Light
+                                                            && x.ID == request.id);
 
-                    if (!string.IsNullOrEmpty(color))
+                    if (device == null)
                     {
-                        await _controller.DeviceController.SetColor(device, color);
-
-                        Console.WriteLine($"Light '{request.id}' color set to '{color}'");
+                        setLightResponse.responseState = -3;
                     }
                     else
                     {
-                        Console.WriteLine($"Ignored color for '{request.id}'");
-                    }
+                        // Color
 
-                    // Brightness
+                        var color = GetPredefinedColor(request.color);
 
-                    if (request.brightness.HasValue 
-                            && request.brightness.Value >= 0
-                            && request.brightness.Value <= 10)
-                    {
-                        await _controller.DeviceController.SetDimmer(device, request.brightness.Value * 10 * 254 / 100);
+                        if (!string.IsNullOrEmpty(color))
+                        {
+                            await _controller.DeviceController.SetColor(device, color);
 
-                        Console.WriteLine($"Light '{request.id}' brightness set to '{request.brightness.Value}'");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Ignored brightness for '{request.id}'");
-                    }
+                            Console.WriteLine($"Light '{request.id}' color set to '{color}'");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Ignored color for '{request.id}'");
+                        }
 
-                    // On/Off
+                        // Brightness
 
-                    if (request.turnLightOn.HasValue)
-                    {
-                        await _controller.DeviceController.SetLight(device, request.turnLightOn.Value);
+                        if (request.brightness.HasValue 
+                                && request.brightness.Value >= 0
+                                && request.brightness.Value <= 10)
+                        {
+                            await _controller.DeviceController.SetDimmer(device, request.brightness.Value * 10 * 254 / 100);
 
-                        Console.WriteLine($"Light '{request.id}' set to '{request.turnLightOn.Value}'");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Ignored turnLightOn for '{request.id}'");
-                    }
-                }               
+                            Console.WriteLine($"Light '{request.id}' brightness set to '{request.brightness.Value}'");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Ignored brightness for '{request.id}'");
+                        }
+
+                        // On/Off
+
+                        if (request.turnLightOn.HasValue)
+                        {
+                            await _controller.DeviceController.SetLight(device, request.turnLightOn.Value);
+
+                            Console.WriteLine($"Light '{request.id}' set to '{request.turnLightOn.Value}'");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Ignored turnLightOn for '{request.id}'");
+                        }
+                    }               
+                }
+            }
+            catch (Exception ex)
+            {
+               setLightResponse.errorMessage = ex.Message;   
             }
             
             var json = JsonConvert.SerializeObject(setLightResponse);
@@ -201,33 +309,27 @@ namespace TradfriModule
             return response;
         }
 
-        private static string GetPredefinedColor(string color)
-        {
-            if (string.IsNullOrEmpty(color))
-            {
-                return null;
-            }
-
-            var fields = typeof(TradfriColors).GetFields();
-
-            var field = fields.FirstOrDefault(x => x.Name == color);
-
-            return field != null ? (string)field.GetValue(null) : string.Empty;
-        }
-
         static async Task<MethodResponse> RebootMethodCallBack(MethodRequest methodRequest, object userContext)        
         {
             Console.WriteLine("Executing RebootMethodCallBack");
 
             var rebootResponse = new RebootResponse{responseState = 0};
 
-            if (_controller == null)
+            try
             {
-                rebootResponse.responseState = -1;
+                if (_controller == null)
+                {
+                    rebootResponse.responseState = -1;
+                }
+                else
+                {
+                    await _controller.GatewayController.Reboot();
+                    CloseController();
+                }
             }
-            else
+            catch (Exception ex)
             {
-                await _controller.GatewayController.Reboot();
+               rebootResponse.errorMessage = ex.Message;   
             }
 
             var json = JsonConvert.SerializeObject(rebootResponse);
@@ -240,17 +342,26 @@ namespace TradfriModule
         {
             Console.WriteLine("Executing GenerateAppSecretMethodCallBack");
 
-            var messageBytes = methodRequest.Data;
-            var messageJson = Encoding.UTF8.GetString(messageBytes);
-            var command = (GenerateAppSecretRequest)JsonConvert.DeserializeObject(messageJson, typeof(GenerateAppSecretRequest));
-            
-            ConstructController();
+            var secretResponse = new GenerateAppSecretResponse();
 
-            var tradfriAuth = _controller.GenerateAppSecret(command.gatewaySecret, _moduleId);
+            try
+            {
+                var messageBytes = methodRequest.Data;
+                var messageJson = Encoding.UTF8.GetString(messageBytes);
+                var command = (GenerateAppSecretRequest)JsonConvert.DeserializeObject(messageJson, typeof(GenerateAppSecretRequest));
+                
+                ConstructController();
 
-            Console.WriteLine($"Secret generated of '{tradfriAuth?.PSK?.Length}' characters long.");
+                var tradfriAuth = _controller.GenerateAppSecret(command.gatewaySecret, _moduleId);
 
-            var secretResponse = new GenerateAppSecretResponse{appSecret = tradfriAuth.PSK};
+                Console.WriteLine($"Secret generated of '{tradfriAuth?.PSK?.Length}' characters long.");
+
+                secretResponse.appSecret = tradfriAuth.PSK;
+            }
+            catch (Exception ex)
+            {
+               secretResponse.errorMessage = ex.Message;   
+            }
 
             var json = JsonConvert.SerializeObject(secretResponse);
             var response = new MethodResponse(Encoding.UTF8.GetBytes(json), 200);
@@ -266,89 +377,96 @@ namespace TradfriModule
 
             var infoResponse = new CollectInformationResponse{ responseState = 0 };
 
-            if (_controller == null)
+            try
             {
-                infoResponse.responseState = -1;
-            }
-            else
-            {
-                var groups = await _controller.GatewayController.GetGroupObjects();
-
-                if ( groups == null)
+                if (_controller == null)
                 {
-                    infoResponse.responseState = -3;
+                    infoResponse.responseState = -1;
                 }
                 else
                 {
-                    var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
+                    var groups = await _controller.GatewayController.GetGroupObjects();
 
-                    if ( deviceObjects == null)
+                    if ( groups == null)
                     {
-                        infoResponse.responseState = -4;
+                        infoResponse.responseState = -3;
                     }
                     else
                     {
-                        foreach (var group in groups)
+                        var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
+
+                        if ( deviceObjects == null)
                         {
-                            var deviceGroup = new Group
-                                                {
-                                                    id =group.ID, 
-                                                    name = group.Name, 
-                                                    lightState = group.LightState, 
-                                                    activeMood = group.ActiveMood
-                                                };
-
-                            Console.WriteLine($"{group.ID} - {group.Name} - {group.ActiveMood}");
-
-                            foreach (var id in group.Devices.The15002.ID)
+                            infoResponse.responseState = -4;
+                        }
+                        else
+                        {
+                            foreach (var group in groups)
                             {
-                                var device = new Device{id = id};
+                                var deviceGroup = new Group
+                                                    {
+                                                        id =group.ID, 
+                                                        name = group.Name, 
+                                                        lightState = group.LightState, 
+                                                        activeMood = group.ActiveMood
+                                                    };
 
-                                var deviceObject = deviceObjects.FirstOrDefault(x => x.ID == id);
+                                Console.WriteLine($"{group.ID} - {group.Name} - {group.ActiveMood}");
 
-                                if (deviceObject == null)
+                                foreach (var id in group.Devices.The15002.ID)
                                 {
-                                    infoResponse.responseState = -5;
+                                    var device = new Device{id = id};
+
+                                    var deviceObject = deviceObjects.FirstOrDefault(x => x.ID == id);
+
+                                    if (deviceObject == null)
+                                    {
+                                        infoResponse.responseState = -5;
+                                    }
+                                    else
+                                    {
+                                        device.deviceType = deviceObject.DeviceType.ToString();
+                                        device.name = deviceObject.Name;
+                                        device.battery = deviceObject.Info.Battery;
+                                        device.deviceTypeExt = deviceObject.Info.DeviceType.ToString();
+                                        device.lastSeen = deviceObject.LastSeen;
+                                        device.reachableState = deviceObject.ReachableState.ToString();
+
+                                        var dimmer = deviceObject.LightControl != null 
+                                                        && deviceObject.LightControl.Count> 0 
+                                                            ? deviceObject.LightControl[0].Dimmer 
+                                                            : -1;
+
+                                        device.dimmer = dimmer;
+
+                                        var state = deviceObject.LightControl != null 
+                                                        && deviceObject.LightControl.Count> 0 
+                                                            ? deviceObject.LightControl[0].State.ToString() 
+                                                            : string.Empty;
+
+                                        device.state = state;
+
+                                        var colorHex = deviceObject.LightControl != null 
+                                                        && deviceObject.LightControl.Count> 0 
+                                                            ? deviceObject.LightControl[0].ColorHex 
+                                                            : string.Empty;
+
+                                        device.state = colorHex;
+                                    }
+
+                                    deviceGroup.devices.Add(device);
                                 }
-                                else
-                                {
-                                    device.deviceType = deviceObject.DeviceType.ToString();
-                                    device.name = deviceObject.Name;
-                                    device.battery = deviceObject.Info.Battery;
-                                    device.deviceTypeExt = deviceObject.Info.DeviceType.ToString();
-                                    device.lastSeen = deviceObject.LastSeen;
-                                    device.reachableState = deviceObject.ReachableState.ToString();
 
-                                    var dimmer = deviceObject.LightControl != null 
-                                                    && deviceObject.LightControl.Count> 0 
-                                                        ? deviceObject.LightControl[0].Dimmer 
-                                                        : -1;
-
-                                    device.dimmer = dimmer;
-
-                                    var state = deviceObject.LightControl != null 
-                                                    && deviceObject.LightControl.Count> 0 
-                                                        ? deviceObject.LightControl[0].State.ToString() 
-                                                        : string.Empty;
-
-                                    device.state = state;
-
-                                    var colorHex = deviceObject.LightControl != null 
-                                                    && deviceObject.LightControl.Count> 0 
-                                                        ? deviceObject.LightControl[0].ColorHex 
-                                                        : string.Empty;
-
-                                    device.state = colorHex;
-                                }
-
-                                deviceGroup.devices.Add(device);
+                                infoResponse.groups.Add(deviceGroup);
                             }
-
-                            infoResponse.groups.Add(deviceGroup);
                         }
                     }
                 }
             }
+            catch (Exception ex)
+            {
+               infoResponse.errorMessage = ex.Message;   
+            }            
 
             var json = JsonConvert.SerializeObject(infoResponse);
             var response = new MethodResponse(Encoding.UTF8.GetBytes(json), 200);
@@ -532,6 +650,20 @@ namespace TradfriModule
 
                 throw;
             }
+        }
+
+        private static string GetPredefinedColor(string color)
+        {
+            if (string.IsNullOrEmpty(color))
+            {
+                return null;
+            }
+
+            var fields = typeof(TradfriColors).GetFields();
+
+            var field = fields.FirstOrDefault(x => x.Name == color);
+
+            return field != null ? (string)field.GetValue(null) : string.Empty;
         }
 
         /// <summary>

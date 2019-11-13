@@ -1,6 +1,6 @@
 namespace TradfriModule
 {
-    public class RebootResponse
+    public class ReconnectResponse
     {
         public int responseState { get; set; }
 
