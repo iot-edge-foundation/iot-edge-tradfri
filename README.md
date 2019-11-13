@@ -25,7 +25,7 @@ At this moment, the module supports:
 * Generating a private key for the module/application
 * Connecting to Hub when right properties are filled in
 * Reboot Hub / Reconnect to the hub
-* Overview of all rooms and its devices
+* Overview of all groups and the devices in these groups
 * Set color/brightness/state of light
 * Set color/brightness of group of lights
 
