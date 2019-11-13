@@ -15,7 +15,9 @@ namespace TradfriModule
     using Newtonsoft.Json;
     using Tomidix.NetStandard.Tradfri;
     using Tomidix.NetStandard.Tradfri.Controllers;
+    using Tomidix.NetStandard.Tradfri.Models;
     using System.Linq;
+    using System.Reflection;
 
     class Program
     {
@@ -90,7 +92,8 @@ namespace TradfriModule
 
             Console.WriteLine($"Module '{_moduleId}' initialized");
 
-            // assign direct method handler 
+            //// assign direct method handlers 
+
             await ioTHubModuleClient.SetMethodHandlerAsync(
                 "generateAppSecret",
                 GenerateAppSecretMethodCallBack,
@@ -98,7 +101,6 @@ namespace TradfriModule
 
             Console.WriteLine("Attached method handler: generateAppSecret");            
 
-            // assign direct method handler 
             await ioTHubModuleClient.SetMethodHandlerAsync(
                 "collectInformation",
                 collectInformationMethodCallBack,
@@ -106,16 +108,127 @@ namespace TradfriModule
 
             Console.WriteLine("Attached method handler: collectInformation");            
 
-                        // assign direct method handler 
             await ioTHubModuleClient.SetMethodHandlerAsync(
                 "reboot",
                 RebootMethodCallBack,
                 ioTHubModuleClient);
 
-            Console.WriteLine("Attached method handler: reboot");            
+            Console.WriteLine("Attached method handler: reboot");    
+
+            await ioTHubModuleClient.SetMethodHandlerAsync(
+                "setLight",
+                SetLightMethodCallBack,
+                ioTHubModuleClient);
+
+            Console.WriteLine("Attached method handler: reboot");    
+
         }
 
-       static async Task<MethodResponse> RebootMethodCallBack(MethodRequest methodRequest, object userContext)        
+                        
+
+       static async Task<MethodResponse> SetLightMethodCallBack(MethodRequest methodRequest, object userContext)        
+        {
+            Console.WriteLine("Executing SetLightMethodCallBack");
+
+            var setLightResponse = new SetLightResponse{responseState = 0};
+
+            var messageBytes = methodRequest.Data;
+            var messageJson = Encoding.UTF8.GetString(messageBytes);
+            var request = JsonConvert.DeserializeObject<SetLightRequest>(messageJson);
+
+            if (_controller == null)
+            {
+                setLightResponse.responseState = -1;
+            }
+            else
+            {
+                var gatewayController = _controller.GatewayController;
+
+                if ( gatewayController == null)
+                {
+                    setLightResponse.responseState = -2;
+                }
+                else
+                {
+                    var deviceObjects = await gatewayController.GetDeviceObjects();
+
+                    var device = deviceObjects.FirstOrDefault(x => x.DeviceType == DeviceType.Light
+                                                            && x.ID == request.id);
+
+                    if (device == null)
+                    {
+                        setLightResponse.responseState = -3;
+                    }
+                    else
+                    {
+                        // On/Off
+
+                        if (request.turnLightOn.HasValue)
+                        {
+                            await _controller.DeviceController.SetLight(device, request.turnLightOn.Value);
+
+                            Console.WriteLine($"Light '{request.id}' set to '{request.turnLightOn.Value}'");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Ignored turnLightOn for '{request.id}'");
+                        }
+
+                        // Color
+
+                        var color = GetPredefinedColor(request.color);
+
+                        if (!string.IsNullOrEmpty(color))
+                        {
+                            await _controller.DeviceController.SetColor(device, color);
+
+                            Console.WriteLine($"Light '{request.id}' color set to '{color}'");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Ignored color for '{request.id}'");
+                        }
+
+                        // Brightness
+
+                        if (request.brightness.HasValue 
+                                && request.brightness.Value >= 0
+                                && request.brightness.Value <= 10)
+                        {
+                            await _controller.DeviceController.SetDimmer(device, request.brightness.Value * 10 * 254 / 100);
+
+                            Console.WriteLine($"Light '{request.id}' brightness set to '{request.brightness.Value}'");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Ignored brightness for '{request.id}'");
+                        }
+
+                    }
+                }                
+            }
+            
+            var json = JsonConvert.SerializeObject(setLightResponse);
+            var response = new MethodResponse(Encoding.UTF8.GetBytes(json), 200);
+
+            return response;
+        }
+
+        private static string GetPredefinedColor(string color)
+        {
+            if (string.IsNullOrEmpty(color))
+            {
+                return null;
+            }
+
+            var fields = typeof(TradfriColors).GetFields();
+
+            var field = fields.FirstOrDefault(x => x.Name == color);
+
+            return field != null ? (string)field.GetValue(null) : string.Empty;
+        }
+
+        static async Task<MethodResponse> RebootMethodCallBack(MethodRequest methodRequest, object userContext)        
         {
             Console.WriteLine("Executing RebootMethodCallBack");
 
@@ -151,7 +264,7 @@ namespace TradfriModule
 
             var messageBytes = methodRequest.Data;
             var messageJson = Encoding.UTF8.GetString(messageBytes);
-            var command = (GenerateAppSecretCommand)JsonConvert.DeserializeObject(messageJson, typeof(GenerateAppSecretCommand));
+            var command = (GenerateAppSecretRequest)JsonConvert.DeserializeObject(messageJson, typeof(GenerateAppSecretRequest));
             
             ConstructController();
 
@@ -482,75 +595,5 @@ namespace TradfriModule
 //             }
 //             return MessageResponse.Completed;
 //         }
-    }
-
-    public class GenerateAppSecretCommand
-    {
-        public string gatewaySecret {get; set;}
-    }
-
-    public class GenerateAppSecretResponse
-    {
-        public string appSecret {get; set;}
-    }
-
-   public class CollectInformationResponse : CollectedInformation
-    {
-        public int responseState { get; set; }
-    }
-
-    public class CollectedInformation
-    {
-        public CollectedInformation()
-        {
-            groups = new List<Group>();
-        }      
-
-        public List<Group> groups {get; private set;}
-    }
-
-    public class Group
-    {
-        public long id { get; set; }
-
-        public string name { get; set; }
-        public long lightState { get; set; }
-
-        public long activeMood {get; set;}
-
-        public List<Device> devices {get; private set;}
-
-        public Group()
-        {
-            devices = new List<Device>();
-        }
-    }
-
-    public class Device
-    {
-        public long id { get; set; }
-
-        public string deviceType { get; set; }
-
-        public string deviceTypeExt { get; set; }
-
-        public string name { get; set; }
-
-        public long battery { get; set; }
-
-        public DateTime lastSeen { get; set; }
-
-        public string reachableState { get; set; }
-
-        public long dimmer { get; set; }
-
-        public string state { get; set; }
-
-        public string colorHex { get; set; }
-    }
-
-    public class RebootResponse
-    {
-        public int responseState { get; set; }
     }
 }
