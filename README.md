@@ -2,6 +2,18 @@
 
 Azure IoT Edge support for IKEA Trådfri/Tradfri. The logic is limited to lights.
 
+# IoT Edge
+
+This logic is available as [Docker container](https://hub.docker.com/repository/docker/svelde/iot-edge-tradfri).
+
+This Docker module is optimized for [Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/).
+
+![Azure IoT Edge Serial Module Architecture](media/flow.png)
+
+# Current limitations
+
+
+
 # Usage
 
 ## 1. Initialization
