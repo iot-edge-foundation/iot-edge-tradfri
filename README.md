@@ -24,7 +24,7 @@ At this moment, the module supports:
 
 * Generating a private key for the module/application
 * Connecting to Hub when right properties are filled in
-* Reboot Hub / Reconnect to hub
+* Reboot Hub / Reconnect to the hub
 * Overview of all rooms and its devices
 * Set color/brightness/state of light
 * Set color/brightness of group of lights
@@ -33,11 +33,11 @@ At this moment, the module supports:
 
 What's coming:
 
-* CollectInformation does not show current state of lights
+* CollectInformation does not show the current state of lights
 * Events/changes are not shown
 * Mood is not supported by groups
 
-![Logging shown at start of module](media/logging.png)
+![Logging showed at the start of module](media/logging.png)
 
 # Usage
 
@@ -50,7 +50,7 @@ Fill in the desired properties:
 
 Then call the "generateAppSecret" direct method. Pass the "gateway secret", found on the back of your Trådfri hub.
 
-*Note*: the name of the module will be used as application name.
+*Note*: the name of the module will be used as the application name.
 
 The returned "application secret" has to be filled in in the desired property. 
 
@@ -60,7 +60,7 @@ The returned "application secret" has to be filled in in the desired property.
 
 Lights can be controlled individually or as a group. 
 
-State, brightness and color can be set. Mood is not available yet.
+State, brightness, and color can be set. Mood is not available yet.
 
 # Interface
 
@@ -300,7 +300,7 @@ public class SetGroupResponse
 }
 ```
 
-# Aknowledgement
+# Acknowledgment
 
 The logic in this module is based on https://github.com/tomidix/CSharpTradFriLibrary.
 
