@@ -8,15 +8,34 @@ This logic is available as [Docker container](https://hub.docker.com/repository/
 
 This Docker module is optimized for [Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/).
 
+```
+docker pull svelde/iot-edge-tradfri:0.1.0-windows-amd64
+docker pull svelde/iot-edge-tradfri:0.1.0-arm32v7
+docker pull svelde/iot-edge-tradfri:0.1.0-amd64
+```
+
+*Note*: This module is tested using the amd64 version.
+
 ![How to use in routing flow](media/flow.png)
 
 # Current limitations
 
 At this moment, the module supports:
 
-* Generating a private key for the module
-* Overview of all rooms and it's device
-* Reboot (untested)
+* Generating a private key for the module/application
+* Connecting to Hub when right properties are filled in
+* Reboot Hub / Reconnect to hub
+* Overview of all rooms and its devices
+* Set color/brightness/state of light
+* Set color/brightness of group of lights
+
+## Work in progress
+
+What's coming:
+
+* CollectInformation does not show current state of lights
+* Events/changes are not shown
+* Mood is not supported by groups
 
 ![Logging shown at start of module](media/logging.png)
 
@@ -39,7 +58,9 @@ The returned "application secret" has to be filled in in the desired property.
 
 ## 2. Controlling lights
 
-[TBD]
+Lights can be controlled individually or as a group. 
+
+State, brightness and color can be set. Mood is not available yet.
 
 # Interface
 
@@ -76,6 +97,7 @@ The output is :
 public class GenerateAppSecretResponse
 {
   public string appSecret {get; set;}
+  public string errorMessage { get; set; }
 }
 ```
 
@@ -207,15 +229,81 @@ The output is:
 public class RebootResponse
 {
   public int responseState { get; set; }
+  public string errorMessage { get; set; }
 }
 ```
 
-*Note*: It's unclear if this method is actully doing anything... 
+*Note*: After this method is sent, the Hub is actually rebooting. This takes some time. You have to reconnect later before you can continue to work with the hub.
+
+## Reconnect
+
+The input is empty:
+
+```
+{}
+```
+
+The output is:
+
+```
+public class ReconnectResponse
+{
+  public int responseState { get; set; }
+  public string errorMessage { get; set; }
+}
+```
+
+## SetLight
+
+The input is empty:
+
+```
+public class SetLightRequest
+{
+  public long id { get; set; }
+  public bool? turnLightOn { get; set; }
+  public string color { get; set; }
+  public int? brightness { get; set; }
+}
+```
+
+The output is:
+
+```
+public class SetLightResponse
+{
+  public int responseState { get; set; }
+  public string errorMessage { get; set; }
+}
+```
+
+## SetGroup
+
+The input is empty:
+
+```
+public class SetLightRequest
+{
+  public long id { get; set; }
+  public bool? turnLightOn { get; set; }
+  public int? brightness { get; set; }
+}
+```
+
+The output is:
+
+```
+public class SetGroupResponse
+{
+  public int responseState { get; set; }
+  public string errorMessage { get; set; }
+}
+```
 
 # Aknowledgement
 
-The logic in this module is based on https://github.com/tomidix/CSharpTradFriLibrary
+The logic in this module is based on https://github.com/tomidix/CSharpTradFriLibrary.
 
 # Disclaimer
 
-This module is trying to honor all rights of Ikea regarding Trådfri.  
+This module is trying to honor all rights of Ikea regarding Trådfri.
