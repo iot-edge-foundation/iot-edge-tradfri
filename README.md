@@ -106,7 +106,7 @@ Fill in this appSecret in the related Desired Property.
 
 ## collectInformation
 
-Collection information can take up to a minute. Please adjust the timeout settings accordingly.
+Collection information can take up to a few minutes. Please adjust the timeout settings accordingly.
 
 The input format is empty:
 
