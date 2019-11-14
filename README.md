@@ -35,7 +35,7 @@ At this moment, the module supports:
 
 This is a work in progress. What's coming:
 
-* Changes on outlet are not clear.
+* Changes on outlets are not clear.
 * Mood is not supported by groups.
 * Bug fixes.
 
@@ -255,7 +255,7 @@ public class RebootResponse
 
 ## Reconnect
 
-Sometimes other direct methods result in a timeout. The most likely reason is that another application has changed properties of a device. In that case, reconnect using this method.
+Sometimes other direct methods result in a timeout. The most likely reason is that another application has changed the properties of a device. In that case, reconnect using this method.
 
 The input is empty:
 
