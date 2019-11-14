@@ -25,6 +25,10 @@ namespace TradfriModule
 
         private static TradfriController _controller;
 
+        private static CollectedInformation _collectedInformation;
+
+        private static ModuleClient _ioTHubModuleClient;
+
         static void Main(string[] args)
         {
             Init().Wait();
@@ -73,60 +77,62 @@ namespace TradfriModule
             ITransportSettings[] settings = { mqttSetting };
 
             // Open a connection to the Edge runtime
-            ModuleClient ioTHubModuleClient = await ModuleClient.CreateFromEnvironmentAsync(settings);
+            _ioTHubModuleClient = await ModuleClient.CreateFromEnvironmentAsync(settings);
 
             // Execute callback method for Twin desired properties updates
-            var twin = await ioTHubModuleClient.GetTwinAsync();
-            await OnDesiredPropertiesUpdate(twin.Properties.Desired, ioTHubModuleClient);
+            var twin = await _ioTHubModuleClient.GetTwinAsync();
+            await OnDesiredPropertiesUpdate(twin.Properties.Desired, _ioTHubModuleClient);
 
             // Attach a callback for updates to the module twin's desired properties.
-            await ioTHubModuleClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertiesUpdate, ioTHubModuleClient);
+            await _ioTHubModuleClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertiesUpdate, _ioTHubModuleClient);
 
-            await ioTHubModuleClient.OpenAsync();
+            await _ioTHubModuleClient.OpenAsync();
 
             Console.WriteLine($"Module '{_moduleId}' initialized");
 
+            Console.WriteLine("Attached routing output: output1"); 
+
             //// assign direct method handlers 
 
-            await ioTHubModuleClient.SetMethodHandlerAsync(
+            await _ioTHubModuleClient.SetMethodHandlerAsync(
                 "generateAppSecret",
                 GenerateAppSecretMethodCallBack,
-                ioTHubModuleClient);
+                _ioTHubModuleClient);
 
             Console.WriteLine("Attached method handler: generateAppSecret");            
 
-            await ioTHubModuleClient.SetMethodHandlerAsync(
+            await _ioTHubModuleClient.SetMethodHandlerAsync(
                 "collectInformation",
                 collectInformationMethodCallBack,
-                ioTHubModuleClient);
+                _ioTHubModuleClient);
 
             Console.WriteLine("Attached method handler: collectInformation");            
 
-            await ioTHubModuleClient.SetMethodHandlerAsync(
+            await _ioTHubModuleClient.SetMethodHandlerAsync(
                 "reboot",
                 RebootMethodCallBack,
-                ioTHubModuleClient);
+                _ioTHubModuleClient);
 
             Console.WriteLine("Attached method handler: reboot");    
 
-            await ioTHubModuleClient.SetMethodHandlerAsync(
+            await _ioTHubModuleClient.SetMethodHandlerAsync(
                 "reconnect",
                 ReconnectMethodCallBack,
-                ioTHubModuleClient);
+                _ioTHubModuleClient);
 
             Console.WriteLine("Attached method handler: reconnect");  
 
-            await ioTHubModuleClient.SetMethodHandlerAsync(
+            await _ioTHubModuleClient.SetMethodHandlerAsync(
                 "setLight",
                 SetLightMethodCallBack,
-                ioTHubModuleClient);
+                _ioTHubModuleClient);
 
             Console.WriteLine("Attached method handler: setLight");    
 
-            await ioTHubModuleClient.SetMethodHandlerAsync(
+            await _ioTHubModuleClient.SetMethodHandlerAsync(
                 "setGroup",
                 SetGroupMethodCallBack,
-                ioTHubModuleClient);
+                _ioTHubModuleClient);
 
             Console.WriteLine("Attached method handler: setGroup");  
         }
@@ -140,8 +146,9 @@ namespace TradfriModule
             try
             {
               Console.WriteLine("Reconnecting...");
-              AttachController();
-              await Task.Delay(TimeSpan.FromSeconds(0));
+
+              await AttachController();
+
               Console.WriteLine("Reconnected");
             }
             catch (Exception ex)
@@ -407,55 +414,21 @@ namespace TradfriModule
                         }
                         else
                         {
-                            foreach (var group in groups)
+                            var collected = await CollectInformation();
+
+                            if (!collected)
                             {
-                                if (string.IsNullOrEmpty(filter)
-                                        || filter.Contains(group.ID.ToString()))
+                                collectInformationResponse.responseState = -5;
+                            }
+                            else
+                            {
+                                foreach(var group in _collectedInformation.groups)
                                 {
-                                    var deviceGroup = new Group
-                                                        {
-                                                            name = group.Name, 
-                                                            lightState = group.LightState, 
-                                                            activeMood = group.ActiveMood
-                                                        };
-
-                                    Console.WriteLine($"{group.ID} - {group.Name} - {group.ActiveMood}");
-
-                                    foreach (var id in group.Devices.The15002.ID)
+                                    if (string.IsNullOrEmpty(filter)
+                                            || filter.Contains(group.Key))
                                     {
-                                        var device = new Device();
-
-                                        var deviceObject = deviceObjects.FirstOrDefault(x => x.ID == id);
-
-                                        if (deviceObject == null)
-                                        {
-                                            collectInformationResponse.responseState = -5;
-                                        }
-                                        else
-                                        {
-                                            device.deviceType = deviceObject.DeviceType.ToString();
-                                            device.name = deviceObject.Name;
-                                            device.battery = deviceObject.Info.Battery;
-                                            device.deviceTypeExt = deviceObject.Info.DeviceType.ToString();
-                                            device.lastSeen = deviceObject.LastSeen;
-                                            device.reachableState = deviceObject.ReachableState.ToString();
-                                            device.serial = deviceObject.Info.Serial;
-                                            device.firmwareVersion = deviceObject.Info.FirmwareVersion;
-                                            device.powerSource = deviceObject.Info.PowerSource.ToString();
-
-                                            if (deviceObject.LightControl != null 
-                                                    && deviceObject.LightControl.Count > 0)
-                                            {
-                                                device.dimmer = deviceObject.LightControl[0].Dimmer;
-                                                device.state = deviceObject.LightControl[0].State.ToString();
-                                                device.colorHex = deviceObject.LightControl[0].ColorHex;
-                                            }
-                                        }
-
-                                        deviceGroup.devices.Add(id.ToString(), device);
+                                        collectInformationResponse.groups.Add(group.Key, group.Value);                                
                                     }
-
-                                    collectInformationResponse.groups.Add(group.ID.ToString(), deviceGroup);                                    
                                 }
                             }
                         }
@@ -473,6 +446,81 @@ namespace TradfriModule
             await Task.Delay(TimeSpan.FromSeconds(0));
 
             return response;
+        }
+
+        static async Task<bool> CollectInformation()
+        {
+            Console.WriteLine("Information collecting");
+
+            var result = false;
+
+            if (_controller != null)
+            {
+                var groups = await _controller.GatewayController.GetGroupObjects();
+
+                var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
+
+                if ( groups != null
+                        && deviceObjects != null)
+                {
+                    _collectedInformation = new CollectedInformation();
+
+                    foreach (var group in groups)
+                    {
+                        var deviceGroup = new Group
+                        {
+                            name = group.Name, 
+                            lightState = group.LightState, 
+                            activeMood = group.ActiveMood
+                        };
+
+                        Console.WriteLine($"{group.ID} - {group.Name} - {group.ActiveMood}");
+
+                        foreach (var id in group.Devices.The15002.ID)
+                        {
+                            var device = new Device();
+
+                            var deviceObject = deviceObjects.FirstOrDefault(x => x.ID == id);
+
+                            if (deviceObject != null)
+                            {
+                                // Add observer for each device to route changes.
+                                _controller.DeviceController.
+                                    ObserveDevice(deviceObject, async d => await NotifyChange(d));
+
+                                device.deviceType = deviceObject.DeviceType.ToString();
+                                device.name = deviceObject.Name;
+                                device.battery = deviceObject.Info.Battery;
+                                device.deviceTypeExt = deviceObject.Info.DeviceType.ToString();
+                                device.lastSeen = deviceObject.LastSeen;
+                                device.reachableState = deviceObject.ReachableState.ToString();
+                                device.serial = deviceObject.Info.Serial;
+                                device.firmwareVersion = deviceObject.Info.FirmwareVersion;
+                                device.powerSource = deviceObject.Info.PowerSource.ToString();
+
+                                if (deviceObject.LightControl != null 
+                                        && deviceObject.LightControl.Count > 0)
+                                {
+                                    device.dimmer = deviceObject.LightControl[0].Dimmer;
+                                    device.state = deviceObject.LightControl[0].State.ToString();
+                                    device.colorHex = deviceObject.LightControl[0].ColorHex;
+                                }
+                            }
+
+                            deviceGroup.devices.Add(id.ToString(), device);
+                        }
+
+                        _collectedInformation.groups.Add(group.ID.ToString(), deviceGroup);                                    
+                    }
+
+                    result = true;
+                }
+             
+            }
+
+            Console.WriteLine("Information collected");
+
+            return result;
         }
 
         private static string GatewayName { get; set; } = DefaultGatewayName;
@@ -566,7 +614,7 @@ namespace TradfriModule
                     await client.UpdateReportedPropertiesAsync(reportedProperties).ConfigureAwait(false);
                 }
 
-                AttachController();
+                await AttachController();
             }
             catch (AggregateException ex)
             {
@@ -587,15 +635,32 @@ namespace TradfriModule
         {
             if (_controller == null)
             {
-                Console.WriteLine($"Controller is already disconnected");
+                Console.WriteLine($"Controller is already closed");
                 
                 return;
             }
 
-            Console.WriteLine($"Closing '{_controller.GateWayName}'");
-            _controller = null;
+            try
+            {
+                var name = _controller.GateWayName;
+
+                Console.WriteLine($"Closing '{name}'");
+                
+                _collectedInformation = null;
+
+                _controller = null;
+
+                Console.WriteLine($"Closed '{name}'");
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"CloseController exception {ex.Message}");
+            }
         }
 
+        /// <summary>
+        /// Construct controller for first key generation.
+        /// </summary>
         private static void ConstructController()
         {
             CloseController();
@@ -603,13 +668,18 @@ namespace TradfriModule
             if (!string.IsNullOrEmpty(GatewayName)
                     && !string.IsNullOrEmpty(IpAddress))
             {
-                Console.WriteLine($"Construct '{GatewayName}'");
+                try
+                {
+                    Console.WriteLine($"Construct '{GatewayName}' at '{IpAddress}'");
 
-                _controller = new TradfriController(GatewayName, IpAddress);
-                
-                Console.WriteLine($"Constructed '{GatewayName}'");
+                    _controller = new TradfriController(GatewayName, IpAddress);
 
-                Console.WriteLine($"Gateway controller attached");
+                    Console.WriteLine($"ontroller constructed");
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine($"ConstructController exception {ex.Message}");
+                }
             }
             else
             {
@@ -617,7 +687,10 @@ namespace TradfriModule
             }
         }
 
-        private static void AttachController()
+        /// <summary>
+        /// Attach controller to collect information.
+        /// </summary>
+        private static async Task AttachController()
         {
             try
             {
@@ -628,7 +701,7 @@ namespace TradfriModule
                         && !string.IsNullOrEmpty(_moduleId)
                         && !string.IsNullOrEmpty(IpAddress))
                 {
-                    Console.WriteLine($"Connecting to '{GatewayName}'   ");
+                    Console.WriteLine($"Connecting to '{GatewayName}' at '{IpAddress}'");
 
                     _controller = new TradfriController(GatewayName, IpAddress);
 
@@ -637,6 +710,17 @@ namespace TradfriModule
                     _controller.ConnectAppKey(AppSecret, _moduleId);
 
                     Console.WriteLine($"Connected to '{GatewayName}'");
+
+                    var collected = await CollectInformation();
+
+                    if (collected)
+                    {
+                        Console.WriteLine($"Constructed '{GatewayName}'");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Connecting controller skipped due to failed collection");
+                    }
                 }
                 else
                 {
@@ -665,37 +749,39 @@ namespace TradfriModule
             return field != null ? (string)field.GetValue(null) : string.Empty;
         }
 
-        /// <summary>
-        /// This method is called whenever the module is sent a message from the EdgeHub. 
-        /// It just pipe the messages without any change.
-        /// It prints all the incoming messages.
-        /// </summary>
-//         static async Task<MessageResponse> PipeMessage(Message message, object userContext)
-//         {
-//             var moduleClient = userContext as ModuleClient;
-//             if (moduleClient == null)
-//             {
-//                 throw new InvalidOperationException("UserContext doesn't contain " + "expected values");
-//             }
+        private static async Task NotifyChange(TradfriDevice device)
+        {
+            if (device == null)
+            {
+                Console.WriteLine($"Device is empty");
+                return;
+            }
 
-//             byte[] messageBytes = message.GetBytes();
-//             string messageString = Encoding.UTF8.GetString(messageBytes);
-// //            Console.WriteLine($"Received message: {counterValue}, Body: [{messageString}]");
+            Console.WriteLine($"Change detected on device '{device.Name}'");
 
-//             if (!string.IsNullOrEmpty(messageString))
-//             {
-//                 using (var pipeMessage = new Message(messageBytes))
-//                 {
-//                     foreach (var prop in message.Properties)
-//                     {
-//                         pipeMessage.Properties.Add(prop.Key, prop.Value);
-//                     }
-//                     await moduleClient.SendEventAsync("output1", pipeMessage);
-                
-//                     Console.WriteLine("Received message sent");
-//                 }
-//             }
-//             return MessageResponse.Completed;
-//         }
+            var routedMessage = new RoutedMessage
+            {
+                id = device.ID,
+                name = device.Name,
+            }; 
+
+            if (device.LightControl != null
+                    && device.LightControl.Count > 0)
+            {
+                routedMessage.state = device.LightControl[0].State.ToString();
+                routedMessage.brightness = device.LightControl[0].Dimmer;
+                routedMessage.color = device.LightControl[0].ColorHex;   
+            }
+
+            var json = JsonConvert.SerializeObject(routedMessage);
+
+            if (!string.IsNullOrEmpty(json))
+            {
+                using (var pipeMessage = new Message(Encoding.UTF8.GetBytes(json)))
+                {
+                    await _ioTHubModuleClient.SendEventAsync("output1", pipeMessage);
+                }
+            }
+        } 
     }
 }
