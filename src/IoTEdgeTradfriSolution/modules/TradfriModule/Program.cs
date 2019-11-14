@@ -357,6 +357,8 @@ namespace TradfriModule
                 var messageJson = Encoding.UTF8.GetString(messageBytes);
                 var command = (GenerateAppSecretRequest)JsonConvert.DeserializeObject(messageJson, typeof(GenerateAppSecretRequest));
                 
+                // Never expose command.gatewaySecret !
+
                 ConstructController();
 
                 var tradfriAuth = _controller.GenerateAppSecret(command.gatewaySecret, _moduleId);
@@ -450,7 +452,7 @@ namespace TradfriModule
 
         static async Task<bool> CollectInformation()
         {
-            Console.WriteLine("Information collecting");
+            Console.WriteLine("Information collecting (this can take a while...)");
 
             var result = false;
 
@@ -458,7 +460,11 @@ namespace TradfriModule
             {
                 var groups = await _controller.GatewayController.GetGroupObjects();
 
+                Console.WriteLine($"Number of groups found: '{groups.Count}'");
+
                 var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
+
+                Console.WriteLine($"Number of devices found: '{deviceObjects.Count}'");
 
                 if ( groups != null
                         && deviceObjects != null)
@@ -659,7 +665,7 @@ namespace TradfriModule
         }
 
         /// <summary>
-        /// Construct controller for first key generation.
+        /// Construct controller before first key generation.
         /// </summary>
         private static void ConstructController()
         {
@@ -729,7 +735,7 @@ namespace TradfriModule
             }
             catch(Exception ex)
             {
-                Console.WriteLine($"Connecting {GatewayName}/{_moduleId} failed due to '{ex.Message}'");
+                Console.WriteLine($"Connecting '{GatewayName}/{_moduleId}' failed due to '{ex.Message}'");
 
                 throw;
             }
