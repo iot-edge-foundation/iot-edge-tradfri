@@ -450,6 +450,9 @@ namespace TradfriModule
             return response;
         }
 
+        /// <summary>
+        /// Collect hub information and make it available globally.
+        /// </summary>
         static async Task<bool> CollectInformation()
         {
             Console.WriteLine("Information collecting (this can take a while...)");
@@ -695,6 +698,7 @@ namespace TradfriModule
 
         /// <summary>
         /// Attach controller to collect information.
+        /// Application key is already generated and registered.
         /// </summary>
         private static async Task AttachController()
         {
