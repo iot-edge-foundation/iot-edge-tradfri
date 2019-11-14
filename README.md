@@ -29,14 +29,15 @@ At this moment, the module supports:
 * Curren state, brightness, and color (hexadecimal) of lights
 * Set color/brightness/state of light
 * Set color/brightness of group of lights
+* Events/changes are shown
 
 ## Work in progress
 
-What's coming:
+This is a work in progress. What's coming:
 
-* CollectInformation does not show the current state of lights
-* Events/changes are not shown
-* Mood is not supported by groups
+* Changes on outlet are not clear.
+* Mood is not supported by groups.
+* Bug fixes.
 
 ![Logging showed at the start of module](media/logging.png)
 
