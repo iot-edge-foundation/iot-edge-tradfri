@@ -9,9 +9,9 @@ This logic is available as [Docker container](https://hub.docker.com/repository/
 This Docker module is optimized for [Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/).
 
 ```
-docker pull svelde/iot-edge-tradfri:0.2.0-windows-amd64
-docker pull svelde/iot-edge-tradfri:0.2.0-arm32v7
-docker pull svelde/iot-edge-tradfri:0.2.0-amd64
+docker pull svelde/iot-edge-tradfri:0.3.0-windows-amd64
+docker pull svelde/iot-edge-tradfri:0.3.0-arm32v7
+docker pull svelde/iot-edge-tradfri:0.3.0-amd64
 ```
 
 *Note*: This module is tested using the amd64 version.
@@ -317,6 +317,23 @@ public class SetGroupResponse
 {
   public int responseState { get; set; }
   public string errorMessage { get; set; }
+}
+```
+
+# Routing events
+
+Changes/events on devices are made available as messages on route 'output1'.
+
+This is the format:
+
+```
+[IoTHubMonitor] [11:24:43 PM] Message received from [edgedevice/tradfri]:
+{
+  "id": 65589,
+  "name": "Bulb living room",
+  "state": "True",
+  "brightness": 86,
+  "color": "efd275"
 }
 ```
 
