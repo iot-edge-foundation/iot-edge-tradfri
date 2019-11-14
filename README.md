@@ -25,7 +25,8 @@ At this moment, the module supports:
 * Generating a private key for the module/application
 * Connecting to Hub when right properties are filled in
 * Reboot Hub / Reconnect to the hub
-* Overview of all groups and the devices in these groups
+* Overview of all groups and the devices in these groups or of filtered groups
+* Curren state, brightness, and color (hexadecimal) of lights
 * Set color/brightness/state of light
 * Set color/brightness of group of lights
 
@@ -108,8 +109,12 @@ Fill in this appSecret in the related Desired Property.
 The input format is empty:
 
 ```
-{}
+{
+  "filter": "[Group IDs]"
+}
 ```
+
+You can pass Group IDs (separated by some separator) to filter the list of groups. 
 
 The output format is:
 
@@ -123,7 +128,7 @@ public class CollectedInformation
 {
   public CollectedInformation()
   {
-    groups = new List<Group>();
+    groups = new dictionary<string, Group>();
   }      
 
   public List<Group> groups {get; private set;}
@@ -131,14 +136,12 @@ public class CollectedInformation
 
 public class Group
 {
-  public long id { get; set; }
-
   public string name { get; set; }
   public long lightState { get; set; }
 
   public long activeMood {get; set;}
 
-  public List<Device> devices {get; private set;}
+  public Dictionary<string, Device> devices {get; private set;}
 
   public Group()
   {
@@ -179,37 +182,43 @@ This is an example of the response:
 	"status": 200,
 	"payload": {
 		"responseState": 0,
-		"groups": [{
-				"id": 131090,
-				"name": "Room 1",
+		"groups": {
+		           "131090": {
+				"name": "Main room",
 				"lightState": 0,
 				"activeMood": 196659,
-				"devices": [{
-						"id": 65593,
+				"devices": {
+				        "65593": {
 						"deviceType": "Remote",
 						"deviceTypeExt": "TRADFRI remote control",
-						"name": "TRADFRI remote control 1",
+						"name": "Remote main room",
 						"battery": 34,
 						"lastSeen": "2019-11-12T21:33:32Z",
 						"reachableState": "1",
-						"dimmer": -1,
-						"state": "",
-						"colorHex": null
-					}, {
-						"id": 65594,
+						"dimmer": 0,
+						"state": null,
+						"colorHex": null,
+						"serial": "",
+						"firmwareVersion": "2.3.014",
+						"powerSource": "InternalBattery"
+					}, 
+					"65594": {
 						"deviceType": "Light",
 						"deviceTypeExt": "TRADFRI bulb GU10 WS 400lm",
-						"name": "TRADFRI bulb 42",
+						"name": "My mood light",
 						"battery": 0,
 						"lastSeen": "2019-11-12T19:58:08Z",
 						"reachableState": "0",
 						"dimmer": 220,
-						"state": "f1e0b5",
-						"colorHex": null
+						"state": "True",
+						"colorHex": "f1e0b5",
+						"serial": "",
+						"firmwareVersion": "2.0.022",
+						"powerSource": "InternalBattery"
 					}
-				]
+				}
 			}
-		]
+		}
 	}
 }
 
