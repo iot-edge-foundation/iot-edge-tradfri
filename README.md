@@ -9,9 +9,9 @@ This logic is available as [Docker container](https://hub.docker.com/repository/
 This Docker module is optimized for [Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/).
 
 ```
-docker pull svelde/iot-edge-tradfri:0.1.0-windows-amd64
-docker pull svelde/iot-edge-tradfri:0.1.0-arm32v7
-docker pull svelde/iot-edge-tradfri:0.1.0-amd64
+docker pull svelde/iot-edge-tradfri:0.2.0-windows-amd64
+docker pull svelde/iot-edge-tradfri:0.2.0-arm32v7
+docker pull svelde/iot-edge-tradfri:0.2.0-amd64
 ```
 
 *Note*: This module is tested using the amd64 version.
