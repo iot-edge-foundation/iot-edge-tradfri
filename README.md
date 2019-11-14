@@ -170,6 +170,12 @@ public class Device
   public string state { get; set; }
 
   public string colorHex { get; set; }
+  
+  public string serial { get; set; }
+	
+  public string firmwareVersion { get; set; }
+	
+  public string powerSource { get; set; }  
 }
 ```
 
