@@ -110,6 +110,13 @@ namespace TradfriModule
             Console.WriteLine("Attached method handler: reboot");    
 
             await ioTHubModuleClient.SetMethodHandlerAsync(
+                "reconnect",
+                ReconnectMethodCallBack,
+                ioTHubModuleClient);
+
+            Console.WriteLine("Attached method handler: reconnect");  
+
+            await ioTHubModuleClient.SetMethodHandlerAsync(
                 "setLight",
                 SetLightMethodCallBack,
                 ioTHubModuleClient);
@@ -122,13 +129,6 @@ namespace TradfriModule
                 ioTHubModuleClient);
 
             Console.WriteLine("Attached method handler: setGroup");  
-
-            await ioTHubModuleClient.SetMethodHandlerAsync(
-                "reconnect",
-                ReconnectMethodCallBack,
-                ioTHubModuleClient);
-
-            Console.WriteLine("Attached method handler: reconnect");  
         }
 
         static async Task<MethodResponse> ReconnectMethodCallBack(MethodRequest methodRequest, object userContext)        
@@ -373,15 +373,21 @@ namespace TradfriModule
         
         static async Task<MethodResponse> collectInformationMethodCallBack(MethodRequest methodRequest, object userContext)        
         {
-            Console.WriteLine("Executing collectInformationMethodCallBack");
-
-            var infoResponse = new CollectInformationResponse{ responseState = 0 };
+            var collectInformationResponse = new CollectInformationResponse{ responseState = 0 };
 
             try
             {
+                var messageBytes = methodRequest.Data;
+                var messageJson = Encoding.UTF8.GetString(messageBytes);
+                var command = JsonConvert.DeserializeObject<CollectInformationRequest>(messageJson);
+
+                var filter = command.filter ?? string.Empty;
+
+                Console.WriteLine($"Executing collectInformationMethodCallBack: Filter: '{filter}'");
+
                 if (_controller == null)
                 {
-                    infoResponse.responseState = -1;
+                    collectInformationResponse.responseState = -1;
                 }
                 else
                 {
@@ -389,7 +395,7 @@ namespace TradfriModule
 
                     if ( groups == null)
                     {
-                        infoResponse.responseState = -3;
+                        collectInformationResponse.responseState = -3;
                     }
                     else
                     {
@@ -397,67 +403,60 @@ namespace TradfriModule
 
                         if ( deviceObjects == null)
                         {
-                            infoResponse.responseState = -4;
+                            collectInformationResponse.responseState = -4;
                         }
                         else
                         {
                             foreach (var group in groups)
                             {
-                                var deviceGroup = new Group
-                                                    {
-                                                        id =group.ID, 
-                                                        name = group.Name, 
-                                                        lightState = group.LightState, 
-                                                        activeMood = group.ActiveMood
-                                                    };
-
-                                Console.WriteLine($"{group.ID} - {group.Name} - {group.ActiveMood}");
-
-                                foreach (var id in group.Devices.The15002.ID)
+                                if (string.IsNullOrEmpty(filter)
+                                        || filter.Contains(group.ID.ToString()))
                                 {
-                                    var device = new Device{id = id};
+                                    var deviceGroup = new Group
+                                                        {
+                                                            name = group.Name, 
+                                                            lightState = group.LightState, 
+                                                            activeMood = group.ActiveMood
+                                                        };
 
-                                    var deviceObject = deviceObjects.FirstOrDefault(x => x.ID == id);
+                                    Console.WriteLine($"{group.ID} - {group.Name} - {group.ActiveMood}");
 
-                                    if (deviceObject == null)
+                                    foreach (var id in group.Devices.The15002.ID)
                                     {
-                                        infoResponse.responseState = -5;
+                                        var device = new Device();
+
+                                        var deviceObject = deviceObjects.FirstOrDefault(x => x.ID == id);
+
+                                        if (deviceObject == null)
+                                        {
+                                            collectInformationResponse.responseState = -5;
+                                        }
+                                        else
+                                        {
+                                            device.deviceType = deviceObject.DeviceType.ToString();
+                                            device.name = deviceObject.Name;
+                                            device.battery = deviceObject.Info.Battery;
+                                            device.deviceTypeExt = deviceObject.Info.DeviceType.ToString();
+                                            device.lastSeen = deviceObject.LastSeen;
+                                            device.reachableState = deviceObject.ReachableState.ToString();
+                                            device.serial = deviceObject.Info.Serial;
+                                            device.firmwareVersion = deviceObject.Info.FirmwareVersion;
+                                            device.powerSource = deviceObject.Info.PowerSource.ToString();
+
+                                            if (deviceObject.LightControl != null 
+                                                    && deviceObject.LightControl.Count > 0)
+                                            {
+                                                device.dimmer = deviceObject.LightControl[0].Dimmer;
+                                                device.state = deviceObject.LightControl[0].State.ToString();
+                                                device.colorHex = deviceObject.LightControl[0].ColorHex;
+                                            }
+                                        }
+
+                                        deviceGroup.devices.Add(id.ToString(), device);
                                     }
-                                    else
-                                    {
-                                        device.deviceType = deviceObject.DeviceType.ToString();
-                                        device.name = deviceObject.Name;
-                                        device.battery = deviceObject.Info.Battery;
-                                        device.deviceTypeExt = deviceObject.Info.DeviceType.ToString();
-                                        device.lastSeen = deviceObject.LastSeen;
-                                        device.reachableState = deviceObject.ReachableState.ToString();
 
-                                        var dimmer = deviceObject.LightControl != null 
-                                                        && deviceObject.LightControl.Count> 0 
-                                                            ? deviceObject.LightControl[0].Dimmer 
-                                                            : -1;
-
-                                        device.dimmer = dimmer;
-
-                                        var state = deviceObject.LightControl != null 
-                                                        && deviceObject.LightControl.Count> 0 
-                                                            ? deviceObject.LightControl[0].State.ToString() 
-                                                            : string.Empty;
-
-                                        device.state = state;
-
-                                        var colorHex = deviceObject.LightControl != null 
-                                                        && deviceObject.LightControl.Count> 0 
-                                                            ? deviceObject.LightControl[0].ColorHex 
-                                                            : string.Empty;
-
-                                        device.state = colorHex;
-                                    }
-
-                                    deviceGroup.devices.Add(device);
+                                    collectInformationResponse.groups.Add(group.ID.ToString(), deviceGroup);                                    
                                 }
-
-                                infoResponse.groups.Add(deviceGroup);
                             }
                         }
                     }
@@ -465,10 +464,10 @@ namespace TradfriModule
             }
             catch (Exception ex)
             {
-               infoResponse.errorMessage = ex.Message;   
+               collectInformationResponse.errorMessage = ex.Message;   
             }            
 
-            var json = JsonConvert.SerializeObject(infoResponse);
+            var json = JsonConvert.SerializeObject(collectInformationResponse);
             var response = new MethodResponse(Encoding.UTF8.GetBytes(json), 200);
 
             await Task.Delay(TimeSpan.FromSeconds(0));
