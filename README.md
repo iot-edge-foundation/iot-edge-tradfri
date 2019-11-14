@@ -9,9 +9,9 @@ This logic is available as [Docker container](https://hub.docker.com/repository/
 This Docker module is optimized for [Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/).
 
 ```
-docker pull svelde/iot-edge-tradfri:0.2.0-windows-amd64
-docker pull svelde/iot-edge-tradfri:0.2.0-arm32v7
-docker pull svelde/iot-edge-tradfri:0.2.0-amd64
+docker pull svelde/iot-edge-tradfri:0.3.0-windows-amd64
+docker pull svelde/iot-edge-tradfri:0.3.0-arm32v7
+docker pull svelde/iot-edge-tradfri:0.3.0-amd64
 ```
 
 *Note*: This module is tested using the amd64 version.
@@ -29,14 +29,15 @@ At this moment, the module supports:
 * Curren state, brightness, and color (hexadecimal) of lights
 * Set color/brightness/state of light
 * Set color/brightness of group of lights
+* Events/changes are shown
 
 ## Work in progress
 
-What's coming:
+This is a work in progress. What's coming:
 
-* CollectInformation does not show the current state of lights
-* Events/changes are not shown
-* Mood is not supported by groups
+* Changes on outlets are not clear.
+* Mood is not supported by groups.
+* Bug fixes.
 
 ![Logging showed at the start of module](media/logging.png)
 
@@ -254,7 +255,7 @@ public class RebootResponse
 
 ## Reconnect
 
-Sometimes other direct methods result in a timeout. The most likely reason is that another application has changed properties of a device. In that case, reconnect using this method.
+Sometimes other direct methods result in a timeout. The most likely reason is that another application has changed the properties of a device. In that case, reconnect using this method.
 
 The input is empty:
 
@@ -316,6 +317,23 @@ public class SetGroupResponse
 {
   public int responseState { get; set; }
   public string errorMessage { get; set; }
+}
+```
+
+# Routing events
+
+Changes/events on devices are made available as messages on route 'output1'.
+
+This is the format:
+
+```
+[IoTHubMonitor] [11:24:43 PM] Message received from [edgedevice/tradfri]:
+{
+  "id": 65589,
+  "name": "Bulb living room",
+  "state": "True",
+  "brightness": 86,
+  "color": "efd275"
 }
 ```
 
