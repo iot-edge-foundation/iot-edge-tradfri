@@ -117,7 +117,7 @@ The input format is empty:
 }
 ```
 
-You can pass Group IDs (separated by some separator) to filter the list of groups. 
+*Note*: You can pass multiple Group IDs (separated by some separator) to filter the list of groups. 
 
 The output format is:
 
