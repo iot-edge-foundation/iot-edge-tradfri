@@ -309,6 +309,8 @@ This is the format:
   "state": "True",
   "brightness": 86,
   "color": "efd275"
+  "groupId": 1234,
+  "groupName": "Living room"
 }
 ```
 
