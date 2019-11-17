@@ -256,7 +256,7 @@ public class RebootResponse
 
 *Note*: After this method is sent, the Hub is actually rebooting. This takes some time. You have to reconnect later before you can continue to work with the hub.
 
-## Reconnect
+## reconnect
 
 Sometimes other direct methods result in a timeout. The most likely reason is that another application has changed the properties of a device. In that case, reconnect using this method.
 
@@ -276,7 +276,7 @@ public class ReconnectResponse
 }
 ```
 
-## SetLight
+## setLight
 
 The input is:
 
@@ -300,7 +300,7 @@ public class SetLightResponse
 }
 ```
 
-## SetGroup
+## setGroup
 
 The input is:
 
