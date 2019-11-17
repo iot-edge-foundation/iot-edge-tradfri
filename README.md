@@ -14,7 +14,7 @@ docker pull svelde/iot-edge-tradfri:0.3.1-arm32v7
 docker pull svelde/iot-edge-tradfri:0.3.1-amd64
 ```
 
-*Note*: This module is tested using the amd64 version. The working of the confirmed for the Raspberry PI version (arm32).
+*Note*: This module is tested using the amd64 version. The Raspberry PI version (arm32) functionality is confirmed.
 
 ![How to use in routing flow](media/flow.png)
 
