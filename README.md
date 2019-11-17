@@ -1,20 +1,20 @@
 # iot-edge-tradfri
 
-Azure IoT Edge support for IKEA Trådfri/Tradfri. The logic is limited to lights.
+Azure IoT Edge support for IKEA Trådfri/Tradfri. The functionality is limited to lights for now.
 
 # IoT Edge
 
-This logic is available as [Docker container](https://hub.docker.com/repository/docker/svelde/iot-edge-tradfri).
+This IoT Edge module is available as [Docker container](https://hub.docker.com/repository/docker/svelde/iot-edge-tradfri).
 
-This Docker module is optimized for [Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/).
+This Docker module is optimized for [Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/):
 
 ```
-docker pull svelde/iot-edge-tradfri:0.3.0-windows-amd64
-docker pull svelde/iot-edge-tradfri:0.3.0-arm32v7
-docker pull svelde/iot-edge-tradfri:0.3.0-amd64
+docker pull svelde/iot-edge-tradfri:0.3.1-windows-amd64
+docker pull svelde/iot-edge-tradfri:0.3.1-arm32v7
+docker pull svelde/iot-edge-tradfri:0.3.1-amd64
 ```
 
-*Note*: This module is tested using the amd64 version.
+*Note*: This module is tested using the amd64 version. The Raspberry PI version (arm32) functionality is confirmed.
 
 ![How to use in routing flow](media/flow.png)
 
@@ -33,11 +33,11 @@ At this moment, the module supports:
 
 ## Work in progress
 
-This is a work in progress. What's coming:
+This is a work in progress. Please support with:
 
-* Changes on outlets are not clear.
-* Mood is not supported by groups.
-* Bug fixes.
+* Mood is not supported by groups
+* Stability
+* Bug fixes
 
 ![Logging showed at the start of module](media/logging.png)
 
@@ -54,7 +54,7 @@ Then call the "generateAppSecret" direct method. Pass the "gateway secret", foun
 
 *Note*: the name of the module will be used as the application name.
 
-The returned "application secret" has to be filled in in the desired property. 
+The returned "application secret" has to be filled in in the desired property:
 
 * appSecret
 
@@ -117,7 +117,7 @@ The input format is empty:
 }
 ```
 
-You can pass Group IDs (separated by some separator) to filter the list of groups. 
+*Note*: You can pass multiple Group IDs (separated by some separator) to filter the list of groups. 
 
 The output format is:
 
@@ -129,55 +129,30 @@ public class CollectInformationResponse : CollectedInformation
 
 public class CollectedInformation
 {
-  public CollectedInformation()
-  {
-    groups = new dictionary<string, Group>();
-  }      
-
-  public List<Group> groups {get; private set;}
+  public Dictionary<long, Group> groups {get; private set;}
 }
 
 public class Group
 {
   public string name { get; set; }
   public long lightState { get; set; }
-
   public long activeMood {get; set;}
-
-  public Dictionary<string, Device> devices {get; private set;}
-
-  public Group()
-  {
-    devices = new List<Device>();
-  }
+  public Dictionary<long, Device> devices {get; private set;}
 }
 
 public class Device
 {
-  public long id { get; set; }
-
   public string deviceType { get; set; }
-
   public string deviceTypeExt { get; set; }
-
   public string name { get; set; }
-
   public long battery { get; set; }
-
   public DateTime lastSeen { get; set; }
-
   public string reachableState { get; set; }
-
   public long dimmer { get; set; }
-
   public string state { get; set; }
-
   public string colorHex { get; set; }
-  
   public string serial { get; set; }
-	
   public string firmwareVersion { get; set; }
-	
   public string powerSource { get; set; }  
 }
 ```
@@ -192,12 +167,12 @@ This is an example of the response:
 	"payload": {
 		"responseState": 0,
 		"groups": {
-		           "131090": {
+		           131090: {
 				"name": "Main room",
 				"lightState": 0,
 				"activeMood": 196659,
 				"devices": {
-				        "65593": {
+				        65593: {
 						"deviceType": "Remote",
 						"deviceTypeExt": "TRADFRI remote control",
 						"name": "Remote main room",
@@ -211,7 +186,7 @@ This is an example of the response:
 						"firmwareVersion": "2.3.014",
 						"powerSource": "InternalBattery"
 					}, 
-					"65594": {
+					65594: {
 						"deviceType": "Light",
 						"deviceTypeExt": "TRADFRI bulb GU10 WS 400lm",
 						"name": "My mood light",
@@ -275,7 +250,7 @@ public class ReconnectResponse
 
 ## SetLight
 
-The input is empty:
+The input is:
 
 ```
 public class SetLightRequest
@@ -299,7 +274,7 @@ public class SetLightResponse
 
 ## SetGroup
 
-The input is empty:
+The input is:
 
 ```
 public class SetLightRequest
@@ -334,6 +309,8 @@ This is the format:
   "state": "True",
   "brightness": 86,
   "color": "efd275"
+  "groupId": 1234,
+  "groupName": "Living room"
 }
 ```
 
