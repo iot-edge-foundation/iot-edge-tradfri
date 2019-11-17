@@ -6,9 +6,9 @@ namespace TradfriModule
     {
         public CollectedInformation()
         {
-            groups = new Dictionary<string, Group>();
+            groups = new Dictionary<long, Group>();
         }      
 
-        public Dictionary<string, Group> groups {get; private set;}
+        public Dictionary<long, Group> groups {get; private set;}
     }
 }

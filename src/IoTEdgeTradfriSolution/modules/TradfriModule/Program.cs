@@ -427,7 +427,7 @@ namespace TradfriModule
                                 foreach(var group in _collectedInformation.groups)
                                 {
                                     if (string.IsNullOrEmpty(filter)
-                                            || filter.Contains(group.Key))
+                                            || filter.Contains(group.Key.ToString()))
                                     {
                                         collectInformationResponse.groups.Add(group.Key, group.Value);                                
                                     }
@@ -516,10 +516,10 @@ namespace TradfriModule
                                 }
                             }
 
-                            deviceGroup.devices.Add(id.ToString(), device);
+                            deviceGroup.devices.Add(id, device);
                         }
 
-                        _collectedInformation.groups.Add(group.ID.ToString(), deviceGroup);                                    
+                        _collectedInformation.groups.Add(group.ID, deviceGroup);                                    
                     }
 
                     result = true;
@@ -781,6 +781,13 @@ namespace TradfriModule
                 routedMessage.state = device.LightControl[0].State.ToString();
                 routedMessage.brightness = device.LightControl[0].Dimmer;
                 routedMessage.color = device.LightControl[0].ColorHex;   
+            }
+
+            if (_collectedInformation != null)
+            {
+                var group = _collectedInformation.groups.First(x=> x.Value.devices.ContainsKey(device.ID));
+                routedMessage.groupId = group.Key;
+                routedMessage.groupName = group.Value.name;
             }
 
             var json = JsonConvert.SerializeObject(routedMessage);
