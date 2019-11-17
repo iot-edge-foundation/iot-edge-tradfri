@@ -9,9 +9,9 @@ This IoT Edge module is available as [Docker container](https://hub.docker.com/r
 This Docker module is optimized for [Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/):
 
 ```
-docker pull svelde/iot-edge-tradfri:0.3.1-windows-amd64
-docker pull svelde/iot-edge-tradfri:0.3.1-arm32v7
-docker pull svelde/iot-edge-tradfri:0.3.1-amd64
+docker pull svelde/iot-edge-tradfri:0.3.2-windows-amd64
+docker pull svelde/iot-edge-tradfri:0.3.2-arm32v7
+docker pull svelde/iot-edge-tradfri:0.3.2-amd64
 ```
 
 *Note*: This module is tested using the amd64 version. The Raspberry PI version (arm32) functionality is confirmed.
@@ -36,7 +36,7 @@ At this moment, the module supports:
 This is a work in progress. Please support with:
 
 * Mood is not supported by groups
-* Stability
+* Stability (eg. change updates)
 * Bug fixes
 
 ![Logging showed at the start of module](media/logging.png)
@@ -208,6 +208,34 @@ This is an example of the response:
 
 ```
 
+## getGatewayInfo
+
+The input is empty:
+
+```
+{}
+```
+
+The output is:
+
+```
+public class GatewayInfoResponse
+{
+  public int responseState { get; set; }
+  public string errorMessage { get; set; }
+  public long commissioningMode { get; set; }
+  public string currentTimeISO8601 { get; set; }
+  public string firmware { get; set; }
+  public string gatewayID { get; set; }
+  public long gatewayTimeSource { get; set; }
+  public long gatewayUpdateProgress { get; set; }
+  public string homekitID { get; set; }
+  public string ntp { get; set; }
+  public long otaType { get; set; }
+  public long OtaUpdateState { get; set; }
+}
+```
+
 ## reboot
 
 The input is empty:
@@ -313,6 +341,8 @@ This is the format:
   "groupName": "Living room"
 }
 ```
+
+*Note*: These recival of messages is concidered as unstable.
 
 # Acknowledgment
 
