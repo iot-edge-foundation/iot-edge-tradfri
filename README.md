@@ -45,12 +45,33 @@ This is a work in progress. Please support with:
 
 ## 1. Initialization
 
-Fill in the desired properties:
+Start by setting up an IoT Edge device. Use one of these [quick starts](https://docs.microsoft.com/en-us/azure/iot-edge/).
+
+Fill in the desired properties of the IoT Edge:
 
 * gatewayName (required; choose a name)
-* ipAddress (required; the IP address of the Trådfri hub)
+* ipAddress (required; the IP address of the Trådfri hub; find it using some network scan tool or your in the ip logging of your router)
 
-Then call the "generateAppSecret" direct method. Pass the "gateway secret", found on the back of your Trådfri hub.
+```
+{
+  "properties.desired": {
+    "gatewayName": "[your gateway name]",
+    "ipAddress": "[the ip address of your hub]"
+  }
+}
+```
+
+this will look like this:
+
+![Setting up the module in IoT Edge](media/iot-edge-module-setup.png)
+
+Then call the 'generateAppSecret' direct method. Pass the "gateway secret" key, found on the back of your Trådfri hub. The body of the Direct Method 'generateAppSecret' should look like:
+
+```
+{
+  "gatewaySecret": "[key of the back of your hub]"
+}
+```
 
 *Note*: the name of the module will be used as the application name.
 
@@ -58,11 +79,27 @@ The returned "application secret" has to be filled in in the desired property:
 
 * appSecret
 
+The desired properties will look like:
+
+```
+{
+  "properties.desired": {
+    "gatewayName": "[your gateway name]",
+    "ipAddress": "[the ip address of your hub]",
+    "appSecret": "[the generated app secret]"
+  }
+}
+```
+
+Once the desired properties are passed, the module will connect with the hub and collect information.
+
 ## 2. Controlling lights
 
 Lights can be controlled individually or as a group. 
 
-State, brightness, and color can be set. Mood is not available yet.
+State, brightness, and color of lights can be set. Mood is not available yet in groups.
+
+See also the methods below.
 
 # Interface
 
