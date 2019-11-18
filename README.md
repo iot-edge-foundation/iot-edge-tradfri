@@ -9,9 +9,9 @@ This IoT Edge module is available as [Docker container](https://hub.docker.com/r
 This Docker module is optimized for [Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/):
 
 ```
-docker pull svelde/iot-edge-tradfri:0.3.1-windows-amd64
-docker pull svelde/iot-edge-tradfri:0.3.1-arm32v7
-docker pull svelde/iot-edge-tradfri:0.3.1-amd64
+docker pull svelde/iot-edge-tradfri:0.3.2-windows-amd64
+docker pull svelde/iot-edge-tradfri:0.3.2-arm32v7
+docker pull svelde/iot-edge-tradfri:0.3.2-amd64
 ```
 
 *Note*: This module is tested using the amd64 version. The Raspberry PI version (arm32) functionality is confirmed.
@@ -36,7 +36,7 @@ At this moment, the module supports:
 This is a work in progress. Please support with:
 
 * Mood is not supported by groups
-* Stability
+* Stability (eg. change updates)
 * Bug fixes
 
 ![Logging showed at the start of module](media/logging.png)
@@ -45,12 +45,33 @@ This is a work in progress. Please support with:
 
 ## 1. Initialization
 
-Fill in the desired properties:
+Start by setting up an IoT Edge device. Use one of these [quick starts](https://docs.microsoft.com/en-us/azure/iot-edge/).
+
+Fill in the desired properties of the IoT Edge:
 
 * gatewayName (required; choose a name)
-* ipAddress (required; the IP address of the Trådfri hub)
+* ipAddress (required; the IP address of the Trådfri hub; find it using some network scan tool or your in the ip logging of your router)
 
-Then call the "generateAppSecret" direct method. Pass the "gateway secret", found on the back of your Trådfri hub.
+```
+{
+  "properties.desired": {
+    "gatewayName": "[your gateway name]",
+    "ipAddress": "[the ip address of your hub]"
+  }
+}
+```
+
+this will look like this:
+
+![Setting up the module in IoT Edge](media/iot-edge-module-setup.png)
+
+Then call the 'generateAppSecret' direct method. Pass the "gateway secret" key, found on the back of your Trådfri hub. The body of the Direct Method 'generateAppSecret' should look like:
+
+```
+{
+  "gatewaySecret": "[key of the back of your hub]"
+}
+```
 
 *Note*: the name of the module will be used as the application name.
 
@@ -58,11 +79,27 @@ The returned "application secret" has to be filled in in the desired property:
 
 * appSecret
 
+The desired properties will look like:
+
+```
+{
+  "properties.desired": {
+    "gatewayName": "[your gateway name]",
+    "ipAddress": "[the ip address of your hub]",
+    "appSecret": "[the generated app secret]"
+  }
+}
+```
+
+Once the desired properties are passed, the module will connect with the hub and collect information.
+
 ## 2. Controlling lights
 
 Lights can be controlled individually or as a group. 
 
-State, brightness, and color can be set. Mood is not available yet.
+State, brightness, and color of lights can be set. Mood is not available yet in groups.
+
+See also the methods below.
 
 # Interface
 
@@ -208,6 +245,34 @@ This is an example of the response:
 
 ```
 
+## getGatewayInfo
+
+The input is empty:
+
+```
+{}
+```
+
+The output is:
+
+```
+public class GatewayInfoResponse
+{
+  public int responseState { get; set; }
+  public string errorMessage { get; set; }
+  public long commissioningMode { get; set; }
+  public string currentTimeISO8601 { get; set; }
+  public string firmware { get; set; }
+  public string gatewayID { get; set; }
+  public long gatewayTimeSource { get; set; }
+  public long gatewayUpdateProgress { get; set; }
+  public string homekitID { get; set; }
+  public string ntp { get; set; }
+  public long otaType { get; set; }
+  public long OtaUpdateState { get; set; }
+}
+```
+
 ## reboot
 
 The input is empty:
@@ -228,7 +293,7 @@ public class RebootResponse
 
 *Note*: After this method is sent, the Hub is actually rebooting. This takes some time. You have to reconnect later before you can continue to work with the hub.
 
-## Reconnect
+## reconnect
 
 Sometimes other direct methods result in a timeout. The most likely reason is that another application has changed the properties of a device. In that case, reconnect using this method.
 
@@ -248,7 +313,7 @@ public class ReconnectResponse
 }
 ```
 
-## SetLight
+## setLight
 
 The input is:
 
@@ -272,7 +337,7 @@ public class SetLightResponse
 }
 ```
 
-## SetGroup
+## setGroup
 
 The input is:
 
@@ -313,6 +378,8 @@ This is the format:
   "groupName": "Living room"
 }
 ```
+
+*Note*: These recival of messages is concidered as unstable.
 
 # Acknowledgment
 
