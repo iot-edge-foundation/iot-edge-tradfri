@@ -135,6 +135,64 @@ namespace TradfriModule
                 _ioTHubModuleClient);
 
             Console.WriteLine("Attached method handler: setGroup");  
+
+            await _ioTHubModuleClient.SetMethodHandlerAsync(
+                "getGatewayInfo",
+                GetGatewayInfoMethodCallBack,
+                _ioTHubModuleClient);
+
+            Console.WriteLine("Attached method handler: getGatewayInfo");  
+        }
+
+       static async Task<MethodResponse> GetGatewayInfoMethodCallBack(MethodRequest methodRequest, object userContext)        
+        {
+            Console.WriteLine("Executing GetGatewayInfoMethodCallBack");
+
+            var gatewayInfoResponse = new GatewayInfoResponse{responseState = 0};
+
+            try
+            {
+                Console.WriteLine("Getting gateway info...");
+
+                if (_controller == null
+                        || _controller.GatewayController == null)
+                {
+                    gatewayInfoResponse.responseState = -1;
+                }
+                else
+                {
+                    var gatewayInfo = await _controller.GatewayController.GetGatewayInfo();
+
+                    if (gatewayInfo == null)
+                    {
+                        gatewayInfoResponse.responseState = -2;
+                    }
+                    else
+                    {
+                        gatewayInfoResponse.commissioningMode = gatewayInfo.CommissioningMode;
+                        gatewayInfoResponse.currentTimeISO8601 = gatewayInfo.CurrentTimeISO8601;
+                        gatewayInfoResponse.firmware = gatewayInfo.Firmware;
+                        gatewayInfoResponse.gatewayID = gatewayInfo.GatewayID;
+                        gatewayInfoResponse.gatewayTimeSource = gatewayInfo.GatewayTimeSource;
+                        gatewayInfoResponse.gatewayUpdateProgress = gatewayInfo.GatewayUpdateProgress;
+                        gatewayInfoResponse.homekitID = gatewayInfo.HomekitID;
+                        gatewayInfoResponse.ntp = gatewayInfo.NTP;
+                        gatewayInfoResponse.otaType = gatewayInfo.OtaType;
+                        gatewayInfoResponse.OtaUpdateState = gatewayInfo.OtaUpdateState;
+                    }
+                }
+
+                Console.WriteLine("Info collected.");
+            }
+            catch (Exception ex)
+            {
+               gatewayInfoResponse.errorMessage = ex.Message;   
+            }
+            
+            var json = JsonConvert.SerializeObject(gatewayInfoResponse);
+            var response = new MethodResponse(Encoding.UTF8.GetBytes(json), 200);
+
+            return response;
         }
 
         static async Task<MethodResponse> ReconnectMethodCallBack(MethodRequest methodRequest, object userContext)        
