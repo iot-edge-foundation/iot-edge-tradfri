@@ -36,7 +36,7 @@ At this moment, the module supports:
 This is a work in progress. Please support with:
 
 * Mood is not supported by groups
-* Stability (eg. change updates)
+* Stability (eg. change updates). Observing renewal fails.
 * Bug fixes
 
 ![Logging showed at the start of module](media/logging.png)
