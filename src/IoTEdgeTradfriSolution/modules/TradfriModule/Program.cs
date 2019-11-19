@@ -15,6 +15,7 @@ namespace TradfriModule
 
     class Program
     {
+        private const int DefaultInterval = -1;
         private const string DefaultAppSecret = "";
 
         private const string DefaultIpAddress = "";
@@ -142,6 +143,35 @@ namespace TradfriModule
                 _ioTHubModuleClient);
 
             Console.WriteLine("Attached method handler: getGatewayInfo");  
+
+            var thread = new Thread(() => ThreadBody(_ioTHubModuleClient));
+            thread.Start();
+        }
+
+        private static async void ThreadBody(object userContext)
+        {
+            var client = userContext as ModuleClient;
+
+            if (client == null)
+            {
+                throw new InvalidOperationException("UserContext doesn't contain " + "expected values");
+            }
+
+            while (true)
+            {
+                if (Interval <= 0)
+                {
+                    // ignore interval
+                    Thread.Sleep(10000);
+                }
+                else
+                {
+                    await ObserveDevices();
+
+                    // sleep for [interval] minutes
+                    Thread.Sleep(Interval * 1000 * 60);
+                }
+            }
         }
 
        static async Task<MethodResponse> GetGatewayInfoMethodCallBack(MethodRequest methodRequest, object userContext)        
@@ -551,10 +581,6 @@ namespace TradfriModule
 
                             if (deviceObject != null)
                             {
-                                // Add observer for each device to route changes.
-                                _controller.DeviceController.
-                                    ObserveDevice(deviceObject, async d => await NotifyChange(d));
-
                                 device.deviceType = deviceObject.DeviceType.ToString();
                                 device.name = deviceObject.Name;
                                 device.battery = deviceObject.Info.Battery;
@@ -595,6 +621,8 @@ namespace TradfriModule
         private static string AppSecret { get; set; } = DefaultAppSecret;
 
         private static string IpAddress { get; set; } = DefaultIpAddress;
+
+        private static int Interval { get; set; } = DefaultInterval;
 
         /// <summary>
         /// Call back function for updating the desired properties
@@ -674,6 +702,26 @@ namespace TradfriModule
                 else
                 {
                     Console.WriteLine($"IpAddress ignored");
+                }
+
+                if (desiredProperties.Contains("interval")) 
+                {
+                    if (desiredProperties["interval"] != null)
+                    {
+                        Interval = desiredProperties["interval"];
+                    }
+                    else
+                    {
+                        Interval = DefaultInterval;
+                    }
+
+                    Console.WriteLine($"Interval changed to '{Interval}'");
+
+                    reportedProperties["interval"] = Interval;
+                }
+                else
+                {
+                    Console.WriteLine($"Interval ignored");
                 }
 
                 if (reportedProperties.Count > 0)
@@ -803,6 +851,37 @@ namespace TradfriModule
             }
         }
 
+        private static async Task ObserveDevices()
+        {
+            if (_controller != null)
+            {
+                try
+                {
+                    var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
+
+                    if (deviceObjects == null)
+                    {
+                        Console.WriteLine("No observable devices available");
+
+                        return;
+                    }
+
+                    Console.WriteLine($"Observe '{deviceObjects.Count}' devices.");
+
+                    foreach(var deviceObject in deviceObjects)
+                    {
+                        // Add observer for each device to route changes.
+                        _controller.DeviceController.
+                            ObserveDevice(deviceObject, async d => await NotifyChange(d));
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine($"Observing devices failed ({ex.Message})");
+                }
+            }
+        }
+
         private static string GetPredefinedColor(string color)
         {
             if (string.IsNullOrEmpty(color))
@@ -819,13 +898,20 @@ namespace TradfriModule
 
         private static async Task NotifyChange(TradfriDevice device)
         {
-            if (device == null)
+            if (_collectedInformation == null
+                    || _collectedInformation.groups == null)
             {
-                Console.WriteLine($"Device is empty");
+                Console.WriteLine($"Notify ignored. Collection is empty");
                 return;
             }
 
-            Console.WriteLine($"Change detected on device '{device.Name}'");
+            if (device == null)
+            {
+                Console.WriteLine($"Notify ignored. Device is empty");
+                return;
+            }
+
+            Console.WriteLine($"{DateTime.UtcNow} - Change detected on device '{device.Name}'");
 
             var routedMessage = new RoutedMessage
             {
@@ -841,13 +927,15 @@ namespace TradfriModule
                 routedMessage.color = device.LightControl[0].ColorHex;   
             }
 
-            if (_collectedInformation != null)
+            var group = _collectedInformation.groups.FirstOrDefault(x=> x.Value != null
+                                                                && x.Value.devices != null
+                                                                && x.Value.devices.ContainsKey(device.ID));
+            if (group.Value != null)
             {
-                var group = _collectedInformation.groups.First(x=> x.Value.devices.ContainsKey(device.ID));
                 routedMessage.groupId = group.Key;
                 routedMessage.groupName = group.Value.name;
             }
-
+        
             var json = JsonConvert.SerializeObject(routedMessage);
 
             if (!string.IsNullOrEmpty(json))
