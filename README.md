@@ -9,9 +9,9 @@ This IoT Edge module is available as [Docker container](https://hub.docker.com/r
 This Docker module is optimized for [Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/):
 
 ```
-docker pull svelde/iot-edge-tradfri:0.3.2-windows-amd64
-docker pull svelde/iot-edge-tradfri:0.3.2-arm32v7
-docker pull svelde/iot-edge-tradfri:0.3.2-amd64
+docker pull svelde/iot-edge-tradfri:0.4.0-windows-amd64
+docker pull svelde/iot-edge-tradfri:0.4.0-arm32v7
+docker pull svelde/iot-edge-tradfri:0.4.0-amd64
 ```
 
 *Note*: This module is tested using the amd64 version. The Raspberry PI version (arm32) functionality is confirmed.
@@ -36,7 +36,7 @@ At this moment, the module supports:
 This is a work in progress. Please support with:
 
 * Mood is not supported by groups
-* Stability (eg. change updates)
+* Stability (eg. change updates). Observing renewal fails.
 * Bug fixes
 
 ![Logging showed at the start of module](media/logging.png)
@@ -110,6 +110,7 @@ The following properties are used:
 * gatewayName (required; choose a name)
 * ipAddress (required; the IP address of the Trådfri hub)
 * appSecret (required; generate this with appropriate Direct Method)
+* interval (set it to the number of minutes the device event observations must be renewed (-1 stops observing and receiving events))
 
 ## Direct Methods
 
@@ -379,7 +380,7 @@ This is the format:
 }
 ```
 
-*Note*: These recival of messages is concidered as unstable.
+*Note*: These recival of these messages is only available when the interval is set.
 
 # Acknowledgment
 
