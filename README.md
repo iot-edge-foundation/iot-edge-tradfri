@@ -110,6 +110,7 @@ The following properties are used:
 * gatewayName (required; choose a name)
 * ipAddress (required; the IP address of the Trådfri hub)
 * appSecret (required; generate this with appropriate Direct Method)
+* interval (set it to the number of minutes the device event observations must be renewed (-1 stops observing and receiving events))
 
 ## Direct Methods
 
@@ -379,7 +380,7 @@ This is the format:
 }
 ```
 
-*Note*: These recival of messages is concidered as unstable.
+*Note*: These recival of these messages is only available when the interval is set.
 
 # Acknowledgment
 
