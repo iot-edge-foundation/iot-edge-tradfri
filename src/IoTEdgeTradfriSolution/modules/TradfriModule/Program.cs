@@ -870,9 +870,13 @@ namespace TradfriModule
 
                     foreach(var deviceObject in deviceObjects)
                     {
+                        if (deviceObject == null)
+                        {
+                            Console.WriteLine("Ignored null device...");
+                            continue;
+                        }
                         // Add observer for each device to route changes.
-                        _controller.DeviceController.
-                            ObserveDevice(deviceObject, async d => await NotifyChange(d));
+                        _controller.DeviceController.ObserveDevice(deviceObject, async d => await NotifyChange(d));
                     }
                 }
                 catch(Exception ex)
