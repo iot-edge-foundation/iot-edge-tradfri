@@ -921,6 +921,7 @@ namespace TradfriModule
             {
                 id = device.ID,
                 name = device.Name,
+                lastSeen = device.LastSeen,
             }; 
 
             if (device.LightControl != null
@@ -928,7 +929,14 @@ namespace TradfriModule
             {
                 routedMessage.state = device.LightControl[0].State.ToString();
                 routedMessage.brightness = device.LightControl[0].Dimmer;
-                routedMessage.color = device.LightControl[0].ColorHex;   
+                routedMessage.colorHex = device.LightControl[0].ColorHex;   
+            }
+
+            if (device.Control != null
+                    && device.Control.Count > 0)
+            {
+                routedMessage.state = device.Control[0].State.ToString();
+                routedMessage.brightness = device.Control[0].Dimmer;
             }
 
             var group = _collectedInformation.groups.FirstOrDefault(x=> x.Value != null

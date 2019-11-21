@@ -375,9 +375,10 @@ This is the output format:
   "name": "Bulb living room",
   "state": "True",
   "brightness": 86,
-  "color": "efd275"
+  "colorHex": "efd275"
   "groupId": 1234,
-  "groupName": "Living room"
+  "groupName": "Living room",
+  "lastSeen": ""
 }
 ```
 
