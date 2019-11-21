@@ -1,6 +1,6 @@
 # iot-edge-tradfri
 
-Azure IoT Edge support for IKEA Trådfri/Tradfri. The functionality is limited to lights for now.
+Azure IoT Edge support for IKEA Trådfri/Tradfri. The functionality is limited to lights and switches.
 
 # IoT Edge
 
