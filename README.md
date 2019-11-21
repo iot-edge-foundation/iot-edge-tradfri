@@ -378,7 +378,7 @@ This is the output format:
   "colorHex": "efd275"
   "groupId": 1234,
   "groupName": "Living room",
-  "lastSeen": ""
+  "lastSeen": "2019-11-21T18:33:46Z"
 }
 ```
 
