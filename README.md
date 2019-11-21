@@ -1,6 +1,6 @@
 # iot-edge-tradfri
 
-Azure IoT Edge support for IKEA Trådfri/Tradfri. The functionality is limited to lights for now.
+Azure IoT Edge support for IKEA Trådfri/Tradfri. The functionality is limited to lights and switches.
 
 # IoT Edge
 
@@ -9,9 +9,9 @@ This IoT Edge module is available as [Docker container](https://hub.docker.com/r
 This Docker module is optimized for [Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/):
 
 ```
-docker pull svelde/iot-edge-tradfri:0.4.0-windows-amd64
-docker pull svelde/iot-edge-tradfri:0.4.0-arm32v7
-docker pull svelde/iot-edge-tradfri:0.4.0-amd64
+docker pull svelde/iot-edge-tradfri:0.5.0-windows-amd64
+docker pull svelde/iot-edge-tradfri:0.5.0-arm32v7
+docker pull svelde/iot-edge-tradfri:0.5.0-amd64
 ```
 
 *Note*: This module is tested using the amd64 version. The Raspberry PI version (arm32) functionality is confirmed.
@@ -378,7 +378,7 @@ This is the output format:
   "colorHex": "efd275"
   "groupId": 1234,
   "groupName": "Living room",
-  "lastSeen": ""
+  "lastSeen": "2019-11-21T18:33:46Z"
 }
 ```
 
