@@ -29,14 +29,14 @@ At this moment, the module supports:
 * Curren state, brightness, and color (hexadecimal) of lights
 * Set color/brightness/state of light
 * Set color/brightness of group of lights
-* Events/changes are shown
+* Events/changes are shown as IoT Edge telemetry events on 'output1'
 
 ## Work in progress
 
 This is a work in progress. Please support with:
 
 * Mood is not supported by groups
-* Stability (eg. change updates). Observing renewal fails.
+* Stability (eg. change events updates)
 * Bug fixes
 
 ![Logging showed at the start of module](media/logging.png)
@@ -111,6 +111,8 @@ The following properties are used:
 * ipAddress (required; the IP address of the Trådfri hub)
 * appSecret (required; generate this with appropriate Direct Method)
 * interval (set it to the number of minutes the device event observations must be renewed (-1 stops observing and receiving events))
+
+It's recommended to have the interval set to two minutes. By default, device events are disabled.  
 
 ## Direct Methods
 
@@ -365,10 +367,9 @@ public class SetGroupResponse
 
 Changes/events on devices are made available as messages on route 'output1'.
 
-This is the format:
+This is the output format:
 
 ```
-[IoTHubMonitor] [11:24:43 PM] Message received from [edgedevice/tradfri]:
 {
   "id": 65589,
   "name": "Bulb living room",
@@ -380,7 +381,7 @@ This is the format:
 }
 ```
 
-*Note*: These recival of these messages is only available when the interval is set.
+*Note*: recieving these messages is only possible when the desired property 'interval' is set.
 
 # Acknowledgment
 
