@@ -9,9 +9,9 @@ This IoT Edge module is available as [Docker container](https://hub.docker.com/r
 This Docker module is optimized for [Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/):
 
 ```
-docker pull svelde/iot-edge-tradfri:0.5.0-windows-amd64
-docker pull svelde/iot-edge-tradfri:0.5.0-arm32v7
-docker pull svelde/iot-edge-tradfri:0.5.0-amd64
+docker pull svelde/iot-edge-tradfri:0.5.1-windows-amd64
+docker pull svelde/iot-edge-tradfri:0.5.1-arm32v7
+docker pull svelde/iot-edge-tradfri:0.5.1-amd64
 ```
 
 *Note*: This module is tested using the amd64 version. The Raspberry PI version (arm32) functionality is confirmed.
@@ -22,7 +22,7 @@ docker pull svelde/iot-edge-tradfri:0.5.0-amd64
 
 At this moment, the module supports:
 
-* Generating a private key for the module/application
+* Generating a private key for the module as an Tradfri application
 * Connecting to Hub when right properties are filled in
 * Reboot Hub / Reconnect to the hub
 * Overview of all groups and the devices in these groups or of filtered groups
@@ -73,7 +73,7 @@ Then call the 'generateAppSecret' direct method. Pass the "gateway secret" key, 
 }
 ```
 
-*Note*: the name of the module will be used as the application name.
+*Note*: the name of the module of a combination of IoT Edge device name/module name will be used as the application name (depending on the 'useExtendedApplicationName' desired property).
 
 The returned "application secret" has to be filled in in the desired property:
 
@@ -99,6 +99,12 @@ Lights can be controlled individually or as a group.
 
 State, brightness, and color of lights can be set. Mood is not available yet in groups.
 
+Supported TRadfri colors are: 
+
+* Blue, LightBlue, SaturatedPurple, Lime, LightPurple, Yellow, SaturatedPink, DarkPeach, SaturatedRed, ColdSky, Pink, Peach, WarmAmber, LightPink, CoolDaylight, CandleLight, WarmGlow, WarmWhite, Sunrise, CoolWhite
+
+*Note*: you can pass any hexadecimal color if you set the desired property 'allowHexColors'. There is no check on the color number passed.
+
 See also the methods below.
 
 # Interface
@@ -111,6 +117,8 @@ The following properties are used:
 * ipAddress (required; the IP address of the Trådfri hub)
 * appSecret (required; generate this with appropriate Direct Method)
 * interval (set it to the number of minutes the device event observations must be renewed (-1 stops observing and receiving events))
+* allowHexColors (tradionally, only limited Tradfri colors like SaturatedPurple, Peach, and CandleLight are allowed. These are then translated into hexadecimal color numbers. With this option you can enter any hexadecimal color; default false)
+* useExtendedApplicationName (use this setting if you run multiple IoT Edge devices with the same Tradfri module name on the same hub; default false)
 
 It's recommended to have the interval set to two minutes. By default, device events are disabled.  
 

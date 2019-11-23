@@ -16,13 +16,20 @@ namespace TradfriModule
     class Program
     {
         private const int DefaultInterval = -1;
+
         private const string DefaultAppSecret = "";
 
         private const string DefaultIpAddress = "";
 
         private const string DefaultGatewayName = "";
 
+        private const bool DefaultUseExtendedApplicationName = false;
+
+        private const bool DefaultAllowHexColors = false;
+
         private static string _moduleId; 
+
+        private static string _deviceId;
 
         private static TradfriController _controller;
 
@@ -57,6 +64,7 @@ namespace TradfriModule
         /// </summary>
         static async Task Init()
         {
+            _deviceId = System.Environment.GetEnvironmentVariable("IOTEDGE_DEVICEID");
             _moduleId = Environment.GetEnvironmentVariable("IOTEDGE_MODULEID");
 
             Console.WriteLine("      _                         ___      _____   ___     _");
@@ -89,7 +97,7 @@ namespace TradfriModule
 
             await _ioTHubModuleClient.OpenAsync();
 
-            Console.WriteLine($"Module '{_moduleId}' initialized");
+            Console.WriteLine($"Module '{_deviceId}'-'{_moduleId}' initialized");
 
             Console.WriteLine("Attached routing output: output1"); 
 
@@ -449,9 +457,13 @@ namespace TradfriModule
 
                 ConstructController();
 
-                var tradfriAuth = _controller.GenerateAppSecret(command.gatewaySecret, _moduleId);
+                var applicationName = UseExtendedApplicationName 
+                                        ? _deviceId + _moduleId 
+                                        : _moduleId;
 
-                Console.WriteLine($"Secret generated of '{tradfriAuth?.PSK?.Length}' characters long.");
+                var tradfriAuth = _controller.GenerateAppSecret(command.gatewaySecret, applicationName);
+
+                Console.WriteLine($"Secret for application '{applicationName}' generated of '{tradfriAuth?.PSK?.Length}' characters long.");
 
                 secretResponse.appSecret = tradfriAuth.PSK;
             }
@@ -624,6 +636,10 @@ namespace TradfriModule
 
         private static int Interval { get; set; } = DefaultInterval;
 
+        private static bool UseExtendedApplicationName {get; set;} = DefaultUseExtendedApplicationName;
+
+        private static bool AllowHexColors {get; set;} = DefaultAllowHexColors;
+
         /// <summary>
         /// Call back function for updating the desired properties
         /// </summary>
@@ -662,6 +678,46 @@ namespace TradfriModule
                 else
                 {
                     Console.WriteLine($"GatewayName ignored");
+                }
+
+                if (desiredProperties.Contains("useExtendedApplicationName")) 
+                {
+                    if (desiredProperties["useExtendedApplicationName"] != null)
+                    {
+                        UseExtendedApplicationName = Convert.ToBoolean(desiredProperties["useExtendedApplicationName"]);
+                    }
+                    else
+                    {
+                        UseExtendedApplicationName = DefaultUseExtendedApplicationName;
+                    }
+
+                    Console.WriteLine($"UseExtendedApplicationName changed to '{UseExtendedApplicationName}'");
+
+                    reportedProperties["useExtendedApplicationName"] = UseExtendedApplicationName;
+                } 
+                else
+                {
+                    Console.WriteLine($"UseExtendedApplicationName ignored");
+                }
+
+                if (desiredProperties.Contains("allowHexColors")) 
+                {
+                    if (desiredProperties["allowHexColors"] != null)
+                    {
+                        AllowHexColors = Convert.ToBoolean(desiredProperties["allowHexColors"]);
+                    }
+                    else
+                    {
+                        AllowHexColors = DefaultAllowHexColors;
+                    }
+
+                    Console.WriteLine($"AllowHexColors changed to '{AllowHexColors}'");
+
+                    reportedProperties["AllowHexColors"] = AllowHexColors;
+                } 
+                else
+                {
+                    Console.WriteLine($"AllowHexColors ignored");
                 }
 
                 if (desiredProperties.Contains("appSecret")) 
@@ -814,6 +870,7 @@ namespace TradfriModule
 
                 if (!string.IsNullOrEmpty(AppSecret)
                         && !string.IsNullOrEmpty(GatewayName)
+                        && !string.IsNullOrEmpty(_deviceId)
                         && !string.IsNullOrEmpty(_moduleId)
                         && !string.IsNullOrEmpty(IpAddress))
                 {
@@ -823,9 +880,13 @@ namespace TradfriModule
 
                     Console.WriteLine($"Controller created");
 
-                    _controller.ConnectAppKey(AppSecret, _moduleId);
+                    var applicationName = UseExtendedApplicationName 
+                                            ? _deviceId + _moduleId 
+                                            : _moduleId;
 
-                    Console.WriteLine($"Connected to '{GatewayName}'");
+                    _controller.ConnectAppKey(AppSecret, applicationName);
+
+                    Console.WriteLine($"Connected application '{applicationName}'");
 
                     var collected = await CollectInformation();
 
@@ -845,7 +906,7 @@ namespace TradfriModule
             }
             catch(Exception ex)
             {
-                Console.WriteLine($"Connecting '{GatewayName}/{_moduleId}' failed due to '{ex.Message}'");
+                Console.WriteLine($"Connecting '{GatewayName}/{_deviceId}/{_moduleId}' failed due to '{ex.Message}'");
 
                 throw;
             }
@@ -891,6 +952,11 @@ namespace TradfriModule
             if (string.IsNullOrEmpty(color))
             {
                 return null;
+            }
+
+            if (AllowHexColors)
+            {
+                return color;
             }
 
             var fields = typeof(TradfriColors).GetFields();
