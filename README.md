@@ -33,7 +33,7 @@ At this moment, the module supports:
 
 ## Work in progress
 
-This is a work in progress. Please support with:
+This is a work in progress. We accept Pull requests. Please support with:
 
 * Mood is not supported by groups
 * Stability (eg. change events updates)
