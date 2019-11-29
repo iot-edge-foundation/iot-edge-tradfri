@@ -2,7 +2,7 @@
 
 Azure IoT Edge support for IKEA Trådfri/Tradfri. The functionality is limited to lights and switches.
 
-# IoT Edge
+# IoT Edge Modules
 
 This IoT Edge module is available as [Docker container](https://hub.docker.com/repository/docker/svelde/iot-edge-tradfri).
 
@@ -105,9 +105,9 @@ Supported TRadfri colors are:
 
 *Note*: you can pass any hexadecimal color if you set the desired property 'allowHexColors'. There is no check on the color number passed.
 
-See also the methods below.
+See also the methods below on how to controll lights.
 
-# Interface
+# Interfacing the module
 
 ## Desired and reported properties
 
@@ -128,7 +128,7 @@ The following Direct Methods are offered:
 
 * generateAppSecret
 
-### generateAppSecret
+### generateAppSecret method
 
 The input is:
 
@@ -153,7 +153,7 @@ public class GenerateAppSecretResponse
 
 Fill in this appSecret in the related Desired Property.
 
-## collectInformation
+## collectInformation method
 
 Collection information can take up to a few minutes. Please adjust the timeout settings accordingly.
 
@@ -205,7 +205,7 @@ public class Device
 }
 ```
 
-### Example
+### collectInformation example
 
 This is an example of the response:
 
@@ -256,7 +256,7 @@ This is an example of the response:
 
 ```
 
-## getGatewayInfo
+## getGatewayInfo method
 
 The input is empty:
 
@@ -284,7 +284,7 @@ public class GatewayInfoResponse
 }
 ```
 
-## reboot
+## reboot method
 
 The input is empty:
 
@@ -304,7 +304,7 @@ public class RebootResponse
 
 *Note*: After this method is sent, the Hub is actually rebooting. This takes some time. You have to reconnect later before you can continue to work with the hub.
 
-## reconnect
+## reconnect method
 
 Sometimes other direct methods result in a timeout. The most likely reason is that another application has changed the properties of a device. In that case, reconnect using this method.
 
@@ -324,7 +324,7 @@ public class ReconnectResponse
 }
 ```
 
-## setLight
+## setLight method
 
 The input is:
 
@@ -348,7 +348,7 @@ public class SetLightResponse
 }
 ```
 
-## setGroup
+## setGroup method
 
 The input is:
 
@@ -398,4 +398,8 @@ The logic in this module is based on https://github.com/tomidix/CSharpTradFriLib
 
 # Disclaimer
 
+This github repository is not related in any way to IKEA, IKEA Systems B.V. or the INGKA Holding B.V.
+
 This module is trying to honor all rights of Ikea regarding Trådfri.
+
+This repository is available under the MIT license.
