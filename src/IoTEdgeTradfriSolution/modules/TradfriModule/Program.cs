@@ -914,7 +914,8 @@ namespace TradfriModule
 
         private static async Task ObserveDevices()
         {
-            if (_controller != null)
+            if (_controller != null
+                    && _controller.GatewayController != null)
             {
                 try
                 {
@@ -944,6 +945,10 @@ namespace TradfriModule
                 {
                     Console.WriteLine($"Observing devices failed ({ex.Message})");
                 }
+            }
+            else
+            {
+                Console.WriteLine($"Observing devices unavailable.");
             }
         }
 
