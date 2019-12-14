@@ -224,7 +224,8 @@ namespace TradfriModule
             }
             catch (Exception ex)
             {
-               gatewayInfoResponse.errorMessage = ex.Message;   
+                gatewayInfoResponse.errorMessage = ex.Message;   
+                gatewayInfoResponse.responseState = -999;
             }
             
             var json = JsonConvert.SerializeObject(gatewayInfoResponse);
@@ -318,7 +319,8 @@ namespace TradfriModule
             }
             catch (Exception ex)
             {
-               setGroupResponse.errorMessage = ex.Message;   
+                setGroupResponse.errorMessage = ex.Message;   
+                setGroupResponse.responseState = -999;
             }
             
             var json = JsonConvert.SerializeObject(setGroupResponse);
@@ -352,7 +354,7 @@ namespace TradfriModule
 
                     if (device == null)
                     {
-                        setLightResponse.responseState = -3;
+                        setLightResponse.responseState = -2;
                     }
                     else
                     {
@@ -403,7 +405,8 @@ namespace TradfriModule
             }
             catch (Exception ex)
             {
-               setLightResponse.errorMessage = ex.Message;   
+                setLightResponse.errorMessage = ex.Message;  
+                setLightResponse.responseState = -999;
             }
             
             var json = JsonConvert.SerializeObject(setLightResponse);
@@ -432,7 +435,8 @@ namespace TradfriModule
             }
             catch (Exception ex)
             {
-               rebootResponse.errorMessage = ex.Message;   
+               rebootResponse.errorMessage = ex.Message;
+               rebootResponse.responseState = -999;
             }
 
             var json = JsonConvert.SerializeObject(rebootResponse);
@@ -504,7 +508,7 @@ namespace TradfriModule
 
                     if ( groups == null)
                     {
-                        collectInformationResponse.responseState = -3;
+                        collectInformationResponse.responseState = -2;
                     }
                     else
                     {
@@ -540,6 +544,7 @@ namespace TradfriModule
             catch (Exception ex)
             {
                collectInformationResponse.errorMessage = ex.Message;   
+               collectInformationResponse.responseState = -999;
             }            
 
             var json = JsonConvert.SerializeObject(collectInformationResponse);
@@ -917,6 +922,7 @@ namespace TradfriModule
             if (_controller != null
                     && _controller.GatewayController != null)
             {
+                Console.WriteLine("Observe devices...");
                 try
                 {
                     var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
@@ -943,7 +949,7 @@ namespace TradfriModule
                 }
                 catch(Exception ex)
                 {
-                    Console.WriteLine($"Observing devices failed ({ex.Message})");
+                    Console.WriteLine($"Observing devices failed ({ex})"); // .Message
                 }
             }
             else
