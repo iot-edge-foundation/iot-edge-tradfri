@@ -174,10 +174,10 @@ namespace TradfriModule
                 }
                 else
                 {
-                    await ObserveDevices();
-
                     // sleep for [interval] minutes
                     Thread.Sleep(Interval * 1000 * 60);
+
+                    await ObserveDevices();
                 }
             }
         }
@@ -791,6 +791,8 @@ namespace TradfriModule
                 }
 
                 await AttachController();
+
+                await ObserveDevices();
             }
             catch (AggregateException ex)
             {
@@ -954,7 +956,7 @@ namespace TradfriModule
             }
             else
             {
-                Console.WriteLine($"Observing devices unavailable.");
+                Console.WriteLine($"Observing devices unavailable at this moment.");
             }
         }
 
