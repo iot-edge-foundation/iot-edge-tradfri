@@ -157,15 +157,20 @@ Fill in this appSecret in the related Desired Property.
 
 Collection information can take up to a few minutes. Please adjust the timeout settings accordingly.
 
-The input format is empty:
+The input format is empty or filtered:
 
 ```
+{
+}
+
+or
+
 {
   "filter": "[Group IDs]"
 }
 ```
 
-*Note*: You can pass multiple Group IDs (separated by some separator) to filter the list of groups. 
+*Note*: You can pass one or more Group IDs (separated by some separator like a comma) to filter the list of groups. 
 
 The output format is:
 
