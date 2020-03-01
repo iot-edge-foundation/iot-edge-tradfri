@@ -99,7 +99,7 @@ Lights can be controlled individually or as a group.
 
 State, brightness, and color of lights can be set. Mood is not available yet in groups.
 
-Supported TRadfri colors are: 
+Supported Tradfri colors are: 
 
 * Blue, LightBlue, SaturatedPurple, Lime, LightPurple, Yellow, SaturatedPink, DarkPeach, SaturatedRed, ColdSky, Pink, Peach, WarmAmber, LightPink, CoolDaylight, CandleLight, WarmGlow, WarmWhite, Sunrise, CoolWhite
 
