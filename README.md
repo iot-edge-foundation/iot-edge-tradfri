@@ -160,8 +160,7 @@ Collection information can take up to a few minutes. Please adjust the timeout s
 The input format is empty or filtered:
 
 ```
-{
-}
+{}
 
 or
 
