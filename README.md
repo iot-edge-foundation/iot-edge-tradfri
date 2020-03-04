@@ -127,6 +127,12 @@ It's recommended to have the interval set to two minutes. By default, device eve
 The following Direct Methods are offered:
 
 * generateAppSecret
+* collectInformation
+* getGatewayInfo
+* reboot
+* reconnect
+* setLight
+* setGroup
 
 ### generateAppSecret method
 
