@@ -43,13 +43,15 @@ This is a work in progress. We accept Pull requests. Please support with:
 
 # Usage
 
-## 1. Initialization
+## 1. How to start with IoT Edge Tradfri
 
-Start by setting up an IoT Edge device. Use one of these [quick starts](https://docs.microsoft.com/en-us/azure/iot-edge/).
+Start by setting up an IoT Edge device. Use one of these [quick starts](https://docs.microsoft.com/en-us/azure/iot-edge/) to get a basic setuip.
 
-Fill in the desired properties of the IoT Edge:
+Next you add a tradfri module to your edge device.
 
-* gatewayName (required; choose a name)
+Fill in the desired properties of the IoT Edge module so you can start connecting to your tradfri hub:
+
+* gatewayName (required; choose a name that you like)
 * ipAddress (required; the IP address of the Trådfri hub; find it using some network scan tool or your in the ip logging of your router)
 
 ```
@@ -65,7 +67,11 @@ this will look like this:
 
 ![Setting up the module in IoT Edge](media/iot-edge-module-setup.png)
 
-Then call the 'generateAppSecret' direct method. Pass the "gateway secret" key, found on the back of your Trådfri hub. The body of the Direct Method 'generateAppSecret' should look like:
+At this point, your tradfri module is not trusted yet by the tradfri hub.
+
+Your module is running and waiting for the 'generateAppSecret' direct command. This is the way to get an app secret key which you have to store afterwards.
+
+Now call the 'generateAppSecret' direct method. Pass the "gateway secret" key, found on the back of your Trådfri hub. The body of the Direct Method 'generateAppSecret' should look like:
 
 ```
 {
@@ -73,13 +79,13 @@ Then call the 'generateAppSecret' direct method. Pass the "gateway secret" key, 
 }
 ```
 
-*Note*: the name of the module of a combination of IoT Edge device name/module name will be used as the application name (depending on the 'useExtendedApplicationName' desired property).
+*Note*: the name of the module or a combination of IoT Edge device name/module name will be used as the application name (depending on the 'useExtendedApplicationName' desired property).
 
-The returned "application secret" has to be filled in in the desired property:
+The returned "application secret" has to be filled in in the desired property too:
 
 * appSecret
 
-The desired properties will look like:
+Now, the desired properties will look like:
 
 ```
 {
@@ -91,7 +97,7 @@ The desired properties will look like:
 }
 ```
 
-Once the desired properties are passed, the module will connect with the hub and collect information.
+Once these valid desired properties are passed, the module will connect with the hub and collect information.
 
 ## 2. Controlling lights
 
@@ -133,6 +139,7 @@ The following Direct Methods are offered:
 * reconnect
 * setLight
 * setGroup
+* setOutlet
 
 ### generateAppSecret method
 
@@ -336,6 +343,8 @@ public class ReconnectResponse
 
 ## setLight method
 
+Turn a light on or off. Adjust color and/or brightness.
+
 The input is:
 
 ```
@@ -352,6 +361,30 @@ The output is:
 
 ```
 public class SetLightResponse
+{
+  public int responseState { get; set; }
+  public string errorMessage { get; set; }
+}
+```
+
+## setOutlet method
+
+Turn an outlet on or off.
+
+The input is:
+
+```
+public class SetOutletRequest
+{
+  public long id { get; set; }
+  public bool? state { get; set; }
+}
+```
+
+The output is:
+
+```
+public class SetOutletResponse
 {
   public int responseState { get; set; }
   public string errorMessage { get; set; }
