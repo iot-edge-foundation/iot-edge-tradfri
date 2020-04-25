@@ -8,3 +8,4 @@ namespace TradfriModule
         public int? brightness { get; set; }
     }
 }
+

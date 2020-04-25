@@ -139,6 +139,13 @@ namespace TradfriModule
             Console.WriteLine("Attached method handler: setLight");    
 
             await _ioTHubModuleClient.SetMethodHandlerAsync(
+                "setOutlet",
+                SetOutletMethodCallBack,
+                _ioTHubModuleClient);
+
+            Console.WriteLine("Attached method handler: setOutlet");    
+
+            await _ioTHubModuleClient.SetMethodHandlerAsync(
                 "setGroup",
                 SetGroupMethodCallBack,
                 _ioTHubModuleClient);
@@ -328,6 +335,68 @@ namespace TradfriModule
 
             return response;
         }
+
+
+        static async Task<MethodResponse> SetOutletMethodCallBack(MethodRequest methodRequest, object userContext)        
+        {
+            Console.WriteLine("Executing SetOutletMethodCallBack");
+
+            var setOutletResponse = new SetOutletResponse{responseState = 0};
+
+            try
+            {
+                var messageBytes = methodRequest.Data;
+                var messageJson = Encoding.UTF8.GetString(messageBytes);
+                var request = JsonConvert.DeserializeObject<SetOutletRequest>(messageJson);
+
+                if (_controller == null)
+                {
+                    setOutletResponse.responseState = -1;
+                }
+                else
+                {
+                    var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
+
+                    var device = deviceObjects.FirstOrDefault(x => x.DeviceType == DeviceType.ControlOutlet
+                                                                        && x.ID == request.id);
+
+                    if (device == null)
+                    {
+                        setOutletResponse.responseState = -2;
+                    }
+                    else
+                    {
+                        // Outlet State
+
+                        if (request.state.HasValue)
+                        {
+                            var state = request.state.Value;
+
+                            await _controller.DeviceController.SetOutlet(device, state);
+
+                            Console.WriteLine($"Outlet '{request.id}' set to '{state}'");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Ignored outlet state for '{request.id}'");
+                        }
+                    }               
+                }
+            }
+            catch (Exception ex)
+            {
+                setOutletResponse.errorMessage = ex.Message;  
+                setOutletResponse.responseState = -999;
+            }
+            
+            var json = JsonConvert.SerializeObject(setOutletResponse);
+            var response = new MethodResponse(Encoding.UTF8.GetBytes(json), 200);
+
+            Console.WriteLine("Executed SetOutletMethodCallBack");
+
+            return response;
+        }
+
 
         static async Task<MethodResponse> SetLightMethodCallBack(MethodRequest methodRequest, object userContext)        
         {
