@@ -805,7 +805,7 @@ namespace TradfriModule
                         AppSecret = DefaultAppSecret;
                     }
 
-                    Console.WriteLine($"AppSecret changed to '{AppSecret}'");
+                    Console.WriteLine($"AppSecret changed to '[Not Exposed]'");
 
                     reportedProperties["appSecret"] = AppSecret;
                 }
@@ -1018,9 +1018,9 @@ namespace TradfriModule
                         _controller.DeviceController.ObserveDevice(deviceObject, async d => await NotifyChange(d));
                     }
                 }
-                catch(Exception ex)
+                catch(Exception)
                 {
-                    Console.WriteLine($"Observing devices failed ({ex})"); // .Message
+                    Console.WriteLine($"Base logic for observing devices (for tradfri telemetry) failed");
                 }
             }
             else
