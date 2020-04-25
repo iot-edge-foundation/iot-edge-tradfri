@@ -45,9 +45,9 @@ This is a work in progress. We accept Pull requests. Please support with:
 
 ## 1. How to start with IoT Edge Tradfri
 
-Start by setting up an IoT Edge device. Use one of these [quick starts](https://docs.microsoft.com/en-us/azure/iot-edge/) to get a basic setuip.
+Start by setting up an IoT Edge device. Use one of these [quick starts](https://docs.microsoft.com/en-us/azure/iot-edge/) to get a basic setup.
 
-Next you add a tradfri module to your edge device.
+Next you add this tradfri module to your edge device.
 
 Fill in the desired properties of the IoT Edge module so you can start connecting to your tradfri hub:
 
