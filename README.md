@@ -29,6 +29,7 @@ At this moment, the module supports:
 * Curren state, brightness, and color (hexadecimal) of lights
 * Set color/brightness/state of light
 * Set color/brightness of group of lights
+* Turn on or off outlets
 * Events/changes are shown as IoT Edge telemetry events on 'output1'
 
 ## Work in progress
@@ -138,8 +139,8 @@ The following Direct Methods are offered:
 * reboot
 * reconnect
 * setLight
-* setGroup
 * setOutlet
+* setGroup
 
 ### generateAppSecret method
 
