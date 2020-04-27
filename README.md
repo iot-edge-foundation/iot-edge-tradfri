@@ -31,10 +31,11 @@ At this moment, the module supports:
 * Set color/brightness of group of lights
 * Turn on or off outlets
 * Events/changes are shown as IoT Edge telemetry events on 'output1'
+* Overview of battery power left in (battery powered) devices
 
 ## Work in progress
 
-This is a work in progress. We accept Pull requests. Please support with:
+This is a work in progress. We accept your pull requests. Please support with:
 
 * Mood is not supported by groups
 * Stability (eg. change events updates)
@@ -141,6 +142,7 @@ The following Direct Methods are offered:
 * setLight
 * setOutlet
 * setGroup
+* collectBatteryPower
 
 ### generateAppSecret method
 
@@ -414,6 +416,51 @@ public class SetGroupResponse
   public string errorMessage { get; set; }
 }
 ```
+
+## collectBatteryPower method
+
+The input format is:
+
+```
+public class CollectBatteryPowerRequest
+{
+    public bool? all {get; set;} // if false, devices with an internal battery are skipped (Default = true)
+}
+```
+
+The output format is:
+
+```
+public class CollectBatteryPowerResponse 
+{
+    public BatteryPowerDevice[] devices {get; set;}
+
+    public int responseState { get; set; }
+
+    public string errorMessage { get; set; }
+}
+```
+
+An example of the output is:
+
+```
+{
+    "status": 200,
+    "payload": {
+        "devices": [
+            {
+                "deviceTypeExt": "TRADFRI remote control",
+                "name": "Biolab remote",
+                "battery": 87,
+                "powerSource": "Battery"
+            }
+        ],
+        "responseState": 0,
+        "errorMessage": null
+    }
+}
+```
+
 
 # Routing events
 
