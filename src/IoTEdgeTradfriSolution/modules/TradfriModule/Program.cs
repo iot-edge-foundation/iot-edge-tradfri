@@ -12,6 +12,7 @@ namespace TradfriModule
     using Tomidix.NetStandard.Tradfri;
     using Tomidix.NetStandard.Tradfri.Models;
     using System.Linq;
+    using System.Collections.Generic;
 
     class Program
     {
@@ -159,6 +160,13 @@ namespace TradfriModule
 
             Console.WriteLine("Attached method handler: getGatewayInfo");  
 
+            await _ioTHubModuleClient.SetMethodHandlerAsync(
+                "collectBatteryPower",
+                CollectBatteryPowerMethodCallBack,
+                _ioTHubModuleClient);
+
+            Console.WriteLine("Attached method handler: collectBatteryPower");  
+
             var thread = new Thread(() => ThreadBody(_ioTHubModuleClient));
             thread.Start();
         }
@@ -183,6 +191,8 @@ namespace TradfriModule
                 {
                     // sleep for [interval] minutes
                     Thread.Sleep(Interval * 1000 * 60);
+
+                    Console.WriteLine("Observing devices triggered...");
 
                     await ObserveDevices();
                 }
@@ -624,6 +634,58 @@ namespace TradfriModule
             return response;
         }
 
+
+
+static async Task<MethodResponse> CollectBatteryPowerMethodCallBack(MethodRequest methodRequest, object userContext)        
+        {
+            var collectBatteryPowerResponse = new CollectBatteryPowerResponse{ responseState = 0 };
+
+            try
+            {
+                var messageBytes = methodRequest.Data;
+                var messageJson = Encoding.UTF8.GetString(messageBytes);
+                var command = JsonConvert.DeserializeObject<CollectBatteryPowerRequest>(messageJson);
+
+                var all = command.all.HasValue ? command.all.Value : true;
+
+                Console.WriteLine($"Executing collectBatteryPowerMethodCallBack: All: '{all}'");
+
+                if (_controller == null)
+                {
+                    collectBatteryPowerResponse.responseState = -1;
+                }
+                else
+                {
+                    var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
+
+                    if ( deviceObjects == null)
+                    {
+                        collectBatteryPowerResponse.responseState = -4;
+                    }
+                    else
+                    {
+                        var collected = await CollectBatteryPower(all);
+
+                        collectBatteryPowerResponse.devices = collected.OrderBy(x=>x.battery).ToArray();
+                    }
+                    
+                }
+            }
+            catch (Exception ex)
+            {
+               collectBatteryPowerResponse.errorMessage = ex.Message;   
+               collectBatteryPowerResponse.responseState = -999;
+            }            
+
+            var json = JsonConvert.SerializeObject(collectBatteryPowerResponse);
+            var response = new MethodResponse(Encoding.UTF8.GetBytes(json), 200);
+
+            await Task.Delay(TimeSpan.FromSeconds(0));
+
+            return response;
+        }
+
+
         /// <summary>
         /// Collect hub information and make it available globally.
         /// </summary>
@@ -637,15 +699,14 @@ namespace TradfriModule
             {
                 var groups = await _controller.GatewayController.GetGroupObjects();
 
-                Console.WriteLine($"Number of groups found: '{groups.Count}'");
-
                 var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
-
-                Console.WriteLine($"Number of devices found: '{deviceObjects.Count}'");
 
                 if ( groups != null
                         && deviceObjects != null)
                 {
+                    Console.WriteLine($"Number of groups found: '{groups.Count}'");
+                    Console.WriteLine($"Number of devices found: '{deviceObjects.Count}'");
+
                     _collectedInformation = new CollectedInformation();
 
                     foreach (var group in groups)
@@ -694,10 +755,63 @@ namespace TradfriModule
 
                     result = true;
                 }
-             
+                else
+                {
+                    Console.WriteLine("No groups or devices found.");
+
+                    return false;
+                }
             }
 
             Console.WriteLine("Information collected");
+
+            return result;
+        }
+
+
+        /// <summary>
+        /// Collect battery power information.
+        /// </summary>
+        static async Task<List<BatteryPowerDevice>> CollectBatteryPower(bool all)
+        {
+            Console.WriteLine("Battery power information collecting (this can take a while...)");
+
+            var result = new List<BatteryPowerDevice>();
+
+            if (_controller != null)
+            {
+                var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
+
+                if (deviceObjects != null)
+                {
+                    Console.WriteLine($"Number of devices found: '{deviceObjects.Count}'");
+                    
+                    foreach (var deviceObject in deviceObjects)
+                    {
+                        if (deviceObject.Info.PowerSource == PowerSource.InternalBattery
+                                && !all)
+                        {
+                            Console.WriteLine($"Skip: '{deviceObject.Name}'");
+
+                            continue;    
+                        }
+
+                        var device = new BatteryPowerDevice();          
+                        device.deviceTypeExt = deviceObject.Info.DeviceType.ToString();
+                        device.name = deviceObject.Name;
+                        device.battery = deviceObject.Info.Battery;
+                        device.powerSource = deviceObject.Info.PowerSource.ToString();
+
+                        result.Add(device);                                    
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No groups or devices found.");
+                }           
+            }
+
+            Console.WriteLine("Battery power information collected");
 
             return result;
         }
@@ -807,7 +921,7 @@ namespace TradfriModule
 
                     Console.WriteLine($"AppSecret changed to '[Not Exposed]'");
 
-                    reportedProperties["appSecret"] = AppSecret;
+                    reportedProperties["appSecret"] = "[Not exposed]";
                 }
                 else
                 {
@@ -865,7 +979,7 @@ namespace TradfriModule
             }
             catch (AggregateException ex)
             {
-                Console.WriteLine($"Desired properties change error: {ex}");
+                Console.WriteLine($"Desired properties change error: {ex.Message}");
                 
                 foreach (Exception exception in ex.InnerExceptions)
                 {
