@@ -1134,7 +1134,7 @@ static async Task<MethodResponse> CollectBatteryPowerMethodCallBack(MethodReques
                 }
                 catch(Exception ex)
                 {
-                    Console.WriteLine($"Base logic for observing devices (for tradfri telemetry) failed ({ex.Message})");
+                    Console.WriteLine($"Base logic for observing devices (for tradfri telemetry) failed ({ex})");
                 }
             }
             else
