@@ -54,7 +54,7 @@ Next you add this tradfri module to your edge device.
 Fill in the desired properties of the IoT Edge module so you can start connecting to your tradfri hub:
 
 * gatewayName (required; choose a name that you like)
-* ipAddress (required; the IP address of the Trådfri hub; find it using some network scan tool or your in the ip logging of your router)
+* ipAddress (required; the IP address of the Trådfri hub; find it using some network scan tool or your in the ip logging of your router. Compare the MAC address on the back of your hub as reference)
 
 ```
 {
