@@ -703,7 +703,11 @@ static async Task<MethodResponse> CollectBatteryPowerMethodCallBack(MethodReques
                     return false;
                 }
 
+                System.Console.WriteLine("Start GetGroupObjects");
+
                 var groups = await _controller.GatewayController.GetGroupObjects();
+
+                System.Console.WriteLine("Start GetDeviceObjects");
 
                 var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
 
@@ -767,6 +771,12 @@ static async Task<MethodResponse> CollectBatteryPowerMethodCallBack(MethodReques
 
                     return false;
                 }
+            }
+            else
+            {
+                Console.WriteLine("Controller is null.");
+
+                return false;
             }
 
             Console.WriteLine("Information collected");
