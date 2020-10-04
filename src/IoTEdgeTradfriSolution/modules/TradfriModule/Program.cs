@@ -697,6 +697,12 @@ static async Task<MethodResponse> CollectBatteryPowerMethodCallBack(MethodReques
 
             if (_controller != null)
             {
+                if (_controller.GatewayController == null)
+                {
+                    System.Console.WriteLine("controller.GatewayController is null.");
+                    return false;
+                }
+
                 var groups = await _controller.GatewayController.GetGroupObjects();
 
                 var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
