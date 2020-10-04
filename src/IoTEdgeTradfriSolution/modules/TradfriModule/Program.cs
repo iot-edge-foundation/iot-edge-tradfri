@@ -784,7 +784,8 @@ static async Task<MethodResponse> CollectBatteryPowerMethodCallBack(MethodReques
 
             var result = new List<BatteryPowerDevice>();
 
-            if (_controller != null)
+            if (_controller != null
+                    &&  _controller.GatewayController != null)
             {
                 var deviceObjects = await _controller.GatewayController.GetDeviceObjects();
 
@@ -815,6 +816,10 @@ static async Task<MethodResponse> CollectBatteryPowerMethodCallBack(MethodReques
                 {
                     Console.WriteLine("No groups or devices found.");
                 }           
+            }
+            else
+            {
+                System.Console.WriteLine("Controller or GatewayController not available.");
             }
 
             Console.WriteLine("Battery power information collected");
