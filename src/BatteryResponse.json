@@ -1,0 +1,51 @@
+{
+    "status": 200,
+    "payload": {
+        "devices": [
+            {
+                "deviceTypeExt": "TRADFRI on/off switch",
+                "name": "erker switch achter",
+                "battery": 16,
+                "powerSource": "Battery"
+            },
+            {
+                "deviceTypeExt": "TRADFRI motion sensor",
+                "name": "TRADFRI motion sensor",
+                "battery": 21,
+                "powerSource": "Battery"
+            },
+            {
+                "deviceTypeExt": "TRADFRI motion sensor",
+                "name": "Wireless motion klompenhuis",
+                "battery": 21,
+                "powerSource": "Battery"
+            },
+            {
+                "deviceTypeExt": "TRADFRI remote control",
+                "name": "Remote control keuken",
+                "battery": 60,
+                "powerSource": "Battery"
+            },
+            {
+                "deviceTypeExt": "TRADFRI remote control",
+                "name": "Remote control hk",
+                "battery": 60,
+                "powerSource": "Battery"
+            },
+            {
+                "deviceTypeExt": "TRADFRI remote control",
+                "name": "Biolab remote",
+                "battery": 74,
+                "powerSource": "Battery"
+            },
+            {
+                "deviceTypeExt": "TRADFRI on/off switch",
+                "name": "erker switch voor",
+                "battery": 87,
+                "powerSource": "Battery"
+            }
+        ],
+        "responseState": 0,
+        "errorMessage": null
+    }
+}
