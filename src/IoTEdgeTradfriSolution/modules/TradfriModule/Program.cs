@@ -546,7 +546,7 @@ namespace TradfriModule
 
                 var tradfriAuth = _controller.GenerateAppSecret(command.gatewaySecret, applicationName);
 
-                Console.WriteLine($"Secret for application '{applicationName}' generated of '{tradfriAuth?.PSK?.Length}' characters long.");
+                Console.WriteLine($"Secret for application '{applicationName}' generated of '{tradfriAuth?.PSK?.Length}' characters long. See method response.");
 
                 secretResponse.appSecret = tradfriAuth.PSK;
             }
@@ -1112,7 +1112,7 @@ static async Task<MethodResponse> CollectBatteryPowerMethodCallBack(MethodReques
                 }
                 else
                 {
-                    Console.WriteLine($"Connecting controller skipped due to incomplete parameters");
+                    Console.WriteLine($"Connecting controller skipped due to incomplete parameters. Please execute 'generateAppSecret'.");
                 }
             }
             catch(Exception ex)
