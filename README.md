@@ -124,7 +124,7 @@ The following properties are used:
 * gatewayName (required; choose a name)
 * ipAddress (required; the IP address of the Trådfri hub)
 * appSecret (required; generate this with appropriate Direct Method)
-* interval (set it to the number of minutes the device event observations must be renewed (-1 stops observing and receiving events))
+* interval (set it to the number of minutes the device event observations must be renewed (-1 observes only once))
 * allowHexColors (tradionally, only limited Tradfri colors like SaturatedPurple, Peach, and CandleLight are allowed. These are then translated into hexadecimal color numbers. With this option you can enter any hexadecimal color; default false)
 * useExtendedApplicationName (use this setting if you run multiple IoT Edge devices with the same Tradfri module name on the same hub; default false)
 

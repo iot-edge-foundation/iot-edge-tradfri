@@ -40,6 +40,8 @@ namespace TradfriModule
 
         private static DateTime _lastObserveDevices = DateTime.MinValue;
 
+        public static bool _attachingInProgress = true;
+
         static void Main(string[] args)
         {
             Init().Wait();
@@ -80,7 +82,7 @@ namespace TradfriModule
             Console.WriteLine("     | || '_/ _` / _` |  _| '_| | ");
             Console.WriteLine("     |_||_| \\__,_\\__,_|_| |_| |_| ");
             Console.WriteLine(" ");
-            Console.WriteLine("   Copyright © 2019 - IoT Edge Foundation");
+            Console.WriteLine("   Copyright © 2019-2020 - IoT Edge Foundation");
             Console.WriteLine(" ");
 
             Console.WriteLine($".Net framework version '{Environment.GetEnvironmentVariable("DOTNET_VERSION")}' in use");
@@ -184,32 +186,39 @@ namespace TradfriModule
 
             while (true)
             {
-                if (Interval <= 0)
+                if (!_attachingInProgress)
                 {
-                    // we only want to start observing once
-
-                    if (_lastObserveDevices != DateTime.MaxValue)
+                    if (Interval <= 0)
                     {
-                        Console.WriteLine("Observing devices only once...");
+                        // we only want to start observing once
+
+                        if (_lastObserveDevices != DateTime.MaxValue)
+                        {
+                            Console.WriteLine("Observing devices only once...");
+
+                            await ObserveDevices();
+
+                            _lastObserveDevices = DateTime.MaxValue;
+                        }
+                    }
+                    else
+                    {
+                        // we only want to restart observing once every [Interval] minutes
+
+                        var now = DateTime.Now;
+
+                        if (now > _lastObserveDevices.AddMinutes(Interval) )
+
+                        Console.WriteLine("Observing devices triggered...");
 
                         await ObserveDevices();
 
-                        _lastObserveDevices = DateTime.MaxValue;
+                        _lastObserveDevices = now;
                     }
                 }
                 else
                 {
-                    // we only want to restart observing once every [Interval] minutes
-
-                    var now = DateTime.Now;
-
-                    if (now > _lastObserveDevices.AddMinutes(Interval) )
-
-                    Console.WriteLine("Observing devices triggered...");
-
-                    await ObserveDevices();
-
-                    _lastObserveDevices = now;
+                    Console.WriteLine("Observing devices delayed due to busy attaching controller");
                 }
 
                 Thread.Sleep(10000);
@@ -1012,8 +1021,6 @@ static async Task<MethodResponse> CollectBatteryPowerMethodCallBack(MethodReques
                 }
 
                 await AttachController();
-
-                await ObserveDevices();
             }
             catch (AggregateException ex)
             {
@@ -1092,6 +1099,7 @@ static async Task<MethodResponse> CollectBatteryPowerMethodCallBack(MethodReques
         /// </summary>
         private static async Task AttachController()
         {
+            _attachingInProgress = true;
             try
             {
                 CloseController();
@@ -1138,6 +1146,12 @@ static async Task<MethodResponse> CollectBatteryPowerMethodCallBack(MethodReques
 
                 throw;
             }
+            finally
+            {
+                _attachingInProgress = false;
+            }
+
+            
         }
 
         private static async Task ObserveDevices()
