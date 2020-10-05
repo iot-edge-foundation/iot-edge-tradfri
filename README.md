@@ -9,9 +9,9 @@ This IoT Edge module is available as [Docker container](https://hub.docker.com/r
 This Docker module is optimized for [Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/):
 
 ```
-svelde/iot-edge-tradfri:0.5.19-windows-amd64
-svelde/iot-edge-tradfri:0.5.19-arm32v7
-svelde/iot-edge-tradfri:0.5.19-amd64
+svelde/iot-edge-tradfri:0.5.21-windows-amd64
+svelde/iot-edge-tradfri:0.5.21-arm32v7
+svelde/iot-edge-tradfri:0.5.21-amd64
 ```
 
 *Note*: This module is tested using the amd64 version. The Raspberry PI version (arm32) functionality is confirmed.
