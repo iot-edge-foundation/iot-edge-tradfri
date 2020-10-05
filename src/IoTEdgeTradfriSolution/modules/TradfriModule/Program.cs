@@ -38,6 +38,8 @@ namespace TradfriModule
 
         private static ModuleClient _ioTHubModuleClient;
 
+        private static DateTime _lastObserveDevices = DateTime.MinValue;
+
         static void Main(string[] args)
         {
             Init().Wait();
@@ -184,18 +186,33 @@ namespace TradfriModule
             {
                 if (Interval <= 0)
                 {
-                    // ignore interval
-                    Thread.Sleep(10000);
+                    // we only want to start observing once
+
+                    if (_lastObserveDevices != DateTime.MaxValue)
+                    {
+                        Console.WriteLine("Observing devices only once...");
+
+                        await ObserveDevices();
+
+                        _lastObserveDevices = DateTime.MaxValue;
+                    }
                 }
                 else
                 {
-                    // sleep for [interval] minutes
-                    Thread.Sleep(Interval * 1000 * 60);
+                    // we only want to restart observing once every [Interval] minutes
+
+                    var now = DateTime.Now;
+
+                    if (now > _lastObserveDevices.AddMinutes(Interval) )
 
                     Console.WriteLine("Observing devices triggered...");
 
                     await ObserveDevices();
+
+                    _lastObserveDevices = now;
                 }
+
+                Thread.Sleep(10000);
             }
         }
 
@@ -942,7 +959,7 @@ static async Task<MethodResponse> CollectBatteryPowerMethodCallBack(MethodReques
 
                     Console.WriteLine($"AppSecret changed to '[Not Exposed]'");
 
-                    reportedProperties["appSecret"] = "[Not exposed]";
+                    reportedProperties["appSecret"] = AppSecret;
                 }
                 else
                 {
