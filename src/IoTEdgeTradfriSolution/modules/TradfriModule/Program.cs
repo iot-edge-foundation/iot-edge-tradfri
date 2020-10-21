@@ -1268,6 +1268,9 @@ static async Task<MethodResponse> CollectBatteryPowerMethodCallBack(MethodReques
             {
                 using (var pipeMessage = new Message(Encoding.UTF8.GetBytes(json)))
                 {
+                    pipeMessage.ContentType = "application/json";
+                    pipeMessage.ContentEncoding = "utf-8";
+                    
                     await _ioTHubModuleClient.SendEventAsync("output1", pipeMessage);
                 }
             }
